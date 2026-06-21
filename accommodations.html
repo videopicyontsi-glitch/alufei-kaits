@@ -16,11 +16,9 @@
     fd.append('file', file);
     fd.append('upload_preset', CLOUDINARY_PRESET);
     fd.append('folder', folder || 'accommodations');
-    // apply grayscale + auto quality in Cloudinary
-    fd.append('transformation', JSON.stringify([{ effect: 'grayscale' }, { quality: 'auto' }]));
     const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
-    if (!res.ok) throw new Error('שגיאת העלאה');
     const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
     return {
       url: data.secure_url,
       publicId: data.public_id,
