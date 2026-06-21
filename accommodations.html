@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מערכת ניהול התאמות</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  const CLOUDINARY_CLOUD = 'dbe0swkki';
+  const CLOUDINARY_PRESET = 'יהונתן';
+  const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+
+  async function uploadToCloudinary(file, folder) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    fd.append('folder', folder || 'accommodations');
+    // apply grayscale + auto quality in Cloudinary
+    fd.append('transformation', JSON.stringify([{ effect: 'grayscale' }, { quality: 'auto' }]));
+    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error('שגיאת העלאה');
+    const data = await res.json();
+    return {
+      url: data.secure_url,
+      publicId: data.public_id,
+      fileName: file.name
+    };
+  }
+
+  // build a grayscale Cloudinary URL from any existing URL
+  function toGrayscaleUrl(url) {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    return url.replace('/upload/', '/upload/e_grayscale,q_auto/');
+  }
+</script>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --secondary: #7c3aed;
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #eff6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; direction: rtl; }
+
+  /* LOGIN */
+  #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%); }
+  .login-card { background: white; border-radius: 20px; padding: 40px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .login-logo { text-align: center; margin-bottom: 28px; }
+  .login-logo h1 { color: var(--primary); font-size: 24px; margin-top: 12px; }
+  .login-logo .icon { font-size: 48px; }
+  .role-tabs { display: flex; gap: 6px; margin-bottom: 24px; background: var(--bg); border-radius: 10px; padding: 4px; }
+  .role-tab { flex: 1; padding: 8px; text-align: center; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--muted); transition: all .2s; border: none; background: none; }
+  .role-tab.active { background: white; color: var(--primary); font-weight: 700; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .form-control { width: 100%; padding: 11px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; transition: border .2s; direction: rtl; }
+  .form-control:focus { border-color: var(--primary); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; text-decoration: none; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-secondary { background: var(--border); color: var(--text); }
+  .btn-ghost { background: none; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-wa { background: #25D366; color: white; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-block { width: 100%; justify-content: center; }
+  .error-msg { color: var(--danger); font-size: 13px; text-align: center; margin-top: 8px; display: none; }
+
+  /* APP SHELL */
+  #app { display: none; }
+  .topbar { background: white; border-bottom: 1px solid var(--border); padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+  .topbar-title { font-weight: 700; font-size: 17px; color: var(--primary); }
+  .topbar-user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; }
+  .main-layout { display: flex; min-height: calc(100vh - 60px); }
+  .sidebar { width: 220px; background: white; border-left: 1px solid var(--border); padding: 20px 12px; flex-shrink: 0; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; color: var(--muted); margin-bottom: 4px; transition: all .2s; }
+  .nav-item:hover { background: var(--accent); color: var(--primary); }
+  .nav-item.active { background: var(--accent); color: var(--primary); font-weight: 700; }
+  .nav-icon { font-size: 18px; }
+  .content { flex: 1; padding: 28px; overflow-y: auto; }
+
+  /* CARDS & SECTIONS */
+  .page-header { margin-bottom: 24px; }
+  .page-header h2 { font-size: 22px; font-weight: 800; }
+  .page-header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); border: 1px solid var(--border); margin-bottom: 20px; }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: white; border-radius: 14px; padding: 18px; text-align: center; box-shadow: 0 1px 8px rgba(0,0,0,0.06); border: 1px solid var(--border); }
+  .stat-num { font-size: 32px; font-weight: 800; color: var(--primary); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: var(--bg); padding: 10px 14px; text-align: right; font-weight: 600; color: var(--muted); border-bottom: 2px solid var(--border); white-space: nowrap; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); verticalicalAlign: middle; }
+  tr:hover td { background: var(--accent); }
+
+  /* BADGE */
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-yellow { background: #fef9c3; color: #a16207; }
+  .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-purple { background: #ede9fe; color: #6d28d9; }
+
+  /* PROGRESS */
+  .progress-bar { background: var(--border); border-radius: 99px; height: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 99px; transition: width .4s; }
+
+  /* ACCOMMODATION TAGS */
+  .acc-list { display: flex; flex-wrap: wrap; gap: 5px; }
+  .acc-tag { background: #ede9fe; color: #5b21b6; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 18px; padding: 28px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-close { cursor: pointer; font-size: 20px; color: var(--muted); background: none; border: none; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-section { margin-bottom: 20px; }
+  .form-section-title { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
+  .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+  .checkbox-item input { width: 16px; height: 16px; cursor: pointer; }
+
+  /* CAMERA UPLOAD */
+  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all .2s; }
+  .upload-zone:hover { border-color: var(--primary); background: var(--accent); }
+  .upload-zone .upload-icon { font-size: 36px; margin-bottom: 8px; }
+  .upload-zone p { color: var(--muted); font-size: 14px; }
+  .upload-zone input[type=file] { display: none; }
+  .uploaded-files { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .file-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+  .file-item .file-name { display: flex; align-items: center; gap: 8px; }
+
+  /* EXAM CARD */
+  .exam-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .exam-item:last-child { border-bottom: none; }
+  .exam-date { font-size: 13px; color: var(--muted); }
+  .exam-days { font-size: 12px; font-weight: 700; }
+  .days-urgent { color: var(--danger); }
+  .days-soon { color: var(--warning); }
+  .days-ok { color: var(--success); }
+
+  /* STUDENT DETAIL */
+  .student-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .student-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 800; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .form-row { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .tag-remove { cursor: pointer; margin-right: 4px; font-size: 10px; }
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+  .reminder-banner { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1px solid #f59e0b; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .reminder-banner .ri { font-size: 22px; }
+
+  .wa-float { position: fixed; bottom: 24px; left: 24px; background: #25D366; color: white; border-radius: 50px; padding: 12px 20px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 20px rgba(37,211,102,0.4); cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; z-index: 99; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">🎓</div>
+      <h1>מערכת ניהול התאמות</h1>
+    </div>
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="setRole('admin')">🛡️ מנהל</button>
+      <button class="role-tab" onclick="setRole('teacher')">👩‍🏫 מורה</button>
+      <button class="role-tab" onclick="setRole('parent')">👨‍👩‍👦 הורה</button>
+    </div>
+    <div id="loginForm">
+      <div class="form-group">
+        <label id="loginLabel">שם מנהל</label>
+        <input class="form-control" id="loginName" placeholder="הכנס שם..." type="text">
+      </div>
+      <div class="form-group">
+        <label>סיסמה</label>
+        <input class="form-control" id="loginPass" placeholder="הכנס סיסמה..." type="password">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()">כניסה למערכת</button>
+      <div class="error-msg" id="loginError">שם משתמש או סיסמה שגויים</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title">🎓 מערכת ניהול התאמות</div>
+    <div class="topbar-user">
+      <span id="topbarName" style="font-size:14px;color:var(--muted);"></span>
+      <div class="avatar" id="topbarAvatar"></div>
+      <button class="btn btn-sm btn-secondary" onclick="logout()">יציאה</button>
+    </div>
+  </div>
+  <div class="main-layout">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="content" id="mainContent"></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA STORE (localStorage)
+// ============================================================
+const DB_KEY = 'acc_system_v4';
+function loadDB() {
+  const raw = localStorage.getItem(DB_KEY);
+  if (raw) return JSON.parse(raw);
+  // seed data
+  const demo = {
+    teachers: [
+      // מחנכים
+      { id: 't_oren',   name: 'אורן דמארי',   phone: '', password: '1234', subjects: 'מחנך י1' },
+      { id: 't_elad',   name: 'אלעד עוזרי',   phone: '', password: '1234', subjects: 'מחנך י2' },
+      { id: 't_kalman', name: 'הרב קלמן',      phone: '', password: '1234', subjects: 'מחנך י5, תנ״ך' },
+      // מתמטיקה
+      { id: 't_hezki',  name: 'חזקי פוטסמן',  phone: '', password: '1234', subjects: 'מתמטיקה',
+        templateUrl: 'https://res.cloudinary.com/dbe0swkki/raw/upload/v1782066086/accommodations/templates/dcvmaikzuzwihhq49njx.docx',
+        templateName: 'Nispach_9_Math.docx' },
+      { id: 't_shlomi', name: 'שלומי כהן',     phone: '', password: '1234', subjects: 'מתמטיקה',
+        templateUrl: 'https://res.cloudinary.com/dbe0swkki/raw/upload/v1782066086/accommodations/templates/dcvmaikzuzwihhq49njx.docx',
+        templateName: 'Nispach_9_Math.docx' },
+      { id: 't_rachel', name: 'רחל ויצמן',     phone: '', password: '1234', subjects: 'מתמטיקה',
+        templateUrl: 'https://res.cloudinary.com/dbe0swkki/raw/upload/v1782066086/accommodations/templates/dcvmaikzuzwihhq49njx.docx',
+        templateName: 'Nispach_9_Math.docx' },
+      // עברית
+      { id: 't_ivrit1', name: 'מורה עברית א',  phone: '', password: '1234', subjects: 'עברית',
+        templateUrl: 'https://res.cloudinary.com/dbe0swkki/raw/upload/v1782066087/accommodations/templates/xeqphyhxgz4zmkeklt44.docx',
+        templateName: 'Nispach_10_Ivrit.docx' },
+      // אנגלית
+      { id: 't_mistana', name: 'מיסטנה',       phone: '', password: '1234', subjects: 'אנגלית',
+        templateUrl: 'https://res.cloudinary.com/dbe0swkki/raw/upload/v1782066090/accommodations/templates/fxtpbrlhphp0kaitkgzl.doc',
+        templateName: 'Nispach_12_Anglit.doc' },
+      { id: 't_itzik',  name: 'איציק',         phone: '', password: '1234', subjects: 'אנגלית',
+        templateUrl: 'https://res.cloudinary.com/dbe0swkki/raw/upload/v1782066090/accommodations/templates/fxtpbrlhphp0kaitkgzl.doc',
+        templateName: 'Nispach_12_Anglit.doc' },
+      { id: 't_hirway', name: 'חירואי',         phone: '', password: '1234', subjects: 'אנגלית',
+        templateUrl: 'https://res.cloudinary.com/dbe0swkki/raw/upload/v1782066090/accommodations/templates/fxtpbrlhphp0kaitkgzl.doc',
+        templateName: 'Nispach_12_Anglit.doc' },
+      // היסטוריה - רבי מלל
+      { id: 't_uriel',  name: 'אוריאל',        phone: '', password: '1234', subjects: 'היסטוריה — רבי מלל',
+        templateUrl: 'https://res.cloudinary.com/dbe0swkki/raw/upload/v1782066089/accommodations/templates/cmk3uyev7rjebazw5btn.doc',
+        templateName: 'Nispach_11_Rabey_Melel.doc' },
+      // תנ״ך
+      { id: 't_belad',   name: 'הרב אלעד',     phone: '', password: '1234', subjects: 'תנ״ך' },
+      { id: 't_boren',   name: 'הרב אורן',     phone: '', password: '1234', subjects: 'תנ״ך' },
+      { id: 't_rafael',  name: 'הרב רפאל',     phone: '', password: '1234', subjects: 'תנ״ך' },
+    ],
+    students: [
+      {
+        id: 's1', name: 'תלמיד לדוגמה א', class: 'י1', parentPhone: '', parentPassword: '1234',
+        accommodations: ['זמן נוסף 25%', 'הגדלת טקסט'],
+        teacherIds: ['t_hezki', 't_mistana'], appendices: [],
+        exams: []
+      },
+      {
+        id: 's2', name: 'תלמיד לדוגמה ב', class: 'י2', parentPhone: '', parentPassword: '1234',
+        accommodations: ['זמן נוסף 50%', 'עורך טקסט'],
+        teacherIds: ['t_shlomi', 't_itzik'], appendices: [],
+        exams: []
+      },
+      {
+        id: 's3', name: 'תלמיד לדוגמה ג', class: 'י5', parentPhone: '', parentPassword: '1234',
+        accommodations: ['זמן נוסף 25%', 'מחשב נייד'],
+        teacherIds: ['t_rachel', 't_uriel'], appendices: [],
+        exams: []
+      }
+    ],
+    admin: { name: 'מנהלת', password: 'admin123' }
+  };
+  saveDB(demo);
+  return demo;
+}
+function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+let db = loadDB();
+
+// ============================================================
+// AUTH
+// ============================================================
+let currentRole = 'admin';
+let currentUser = null; // teacher obj or 'admin' or student name
+
+function setRole(r) {
+  currentRole = r;
+  document.querySelectorAll('.role-tab').forEach((t,i) => t.classList.toggle('active', ['admin','teacher','parent'][i] === r));
+  document.getElementById('loginLabel').textContent = r === 'admin' ? 'שם מנהל' : r === 'teacher' ? 'שם מורה' : 'שם תלמיד';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+function doLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  const err = document.getElementById('loginError');
+  db = loadDB();
+
+  if (currentRole === 'admin') {
+    if (name === db.admin.name && pass === db.admin.password) { currentUser = 'admin'; showApp(); return; }
+  } else if (currentRole === 'teacher') {
+    const t = db.teachers.find(t => t.name === name && t.password === pass);
+    if (t) { currentUser = t; showApp(); return; }
+  } else {
+    const s = db.students.find(s => s.name === name && s.parentPassword === pass);
+    if (s) { currentUser = s; showApp(); return; }
+  }
+  err.style.display = 'block';
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  const name = currentRole === 'admin' ? db.admin.name : currentRole === 'teacher' ? currentUser.name : currentUser.name;
+  document.getElementById('topbarName').textContent = name;
+  document.getElementById('topbarAvatar').textContent = name.charAt(0);
+  buildSidebar();
+  if (currentRole === 'admin') renderAdminDashboard();
+  else if (currentRole === 'teacher') renderTeacherDashboard();
+  else renderParentDashboard();
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  let items = [];
+  if (currentRole === 'admin') {
+    items = [
+      { icon: '📊', label: 'לוח בקרה', fn: 'renderAdminDashboard' },
+      { icon: '👩‍🏫', label: 'מורים', fn: 'renderAdminTeachers' },
+      { icon: '🧑‍🎓', label: 'תלמידים', fn: 'renderAdminStudents' },
+      { icon: '📅', label: 'לוח מבחנים', fn: 'renderAdminExams' },
+      { icon: '🏆', label: 'ציונים', fn: 'renderAdminGrades' },
+      { icon: '📈', label: 'התקדמות', fn: 'renderAdminProgress' },
+    ];
+  } else if (currentRole === 'teacher') {
+    items = [
+      { icon: '📊', label: 'לוח בקרה', fn: 'renderTeacherDashboard' },
+      { icon: '🧑‍🎓', label: 'התלמידים שלי', fn: 'renderTeacherStudents' },
+      { icon: '📅', label: 'מועדי בחינות', fn: 'renderTeacherExams' },
+      { icon: '📁', label: 'מסמכים', fn: 'renderTeacherDocs' },
+    ];
+  } else {
+    items = [
+      { icon: '📊', label: 'סטטוס', fn: 'renderParentDashboard' },
+      { icon: '📅', label: 'בחינות קרובות', fn: 'renderParentExams' },
+      { icon: '👩‍🏫', label: 'המורים שלי', fn: 'renderParentTeachers' },
+    ];
+  }
+  sidebar.innerHTML = items.map(it =>
+    `<div class="nav-item" onclick="${it.fn}()" id="nav_${it.fn}">
+      <span class="nav-icon">${it.icon}</span>${it.label}
+    </div>`
+  ).join('');
+}
+
+function setActiveNav(fn) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('nav_' + fn);
+  if (el) el.classList.add('active');
+}
+
+function setContent(html) {
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function daysUntil(dateStr) {
+  const d = new Date(dateStr) - new Date();
+  return Math.ceil(d / 86400000);
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const dd = new Date(d);
+  return dd.toLocaleDateString('he-IL');
+}
+function uid() { return '_' + Math.random().toString(36).substr(2,9); }
+function studentsOfTeacher(tid) { return db.students.filter(s => s.teacherIds.includes(tid)); }
+function teacherById(id) { return db.teachers.find(t => t.id === id); }
+function studentById(id) { return db.students.find(s => s.id === id); }
+function examHasDocs(e) {
+  return (e.originalExam && e.originalExam.fileName) || (e.comparativeExam && e.comparativeExam.fileName);
+}
+function uploadProgress(student) {
+  const total = student.exams.length;
+  if (!total) return 0;
+  const done = student.exams.filter(e => examHasDocs(e)).length;
+  return Math.round(done / total * 100);
+}
+function waLink(phone, msg) {
+  const p = phone.replace(/\D/g,'');
+  return `https://wa.me/972${p.startsWith('0') ? p.slice(1) : p}?text=${encodeURIComponent(msg)}`;
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function openModal(html) {
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === document.getElementById('modalOverlay')) closeModal(); });
+
+// ============================================================
+// ADMIN — DASHBOARD
+// ============================================================
+let adminDashTab = 'teacher'; // 'teacher' | 'student'
+
+function renderAdminDashboard(tab) {
+  if (tab) adminDashTab = tab;
+  setActiveNav('renderAdminDashboard');
+  const totalTeachers = db.teachers.length;
+  const totalStudents = db.students.length;
+  const totalExams = db.students.flatMap(s => s.exams).length;
+  const totalDocs = db.students.flatMap(s => s.exams).filter(e => examHasDocs(e)).length;
+  const pct = totalExams ? Math.round(totalDocs / totalExams * 100) : 0;
+  const urgentExams = db.students.flatMap(s => s.exams.map(e => ({ ...e, studentName: s.name }))).filter(e => daysUntil(e.examDate) <= 7 && daysUntil(e.examDate) > 0);
+
+  // ---- by-teacher panel ----
+  const byTeacherHTML = db.teachers.map(t => {
+    const students = studentsOfTeacher(t.id);
+    const tExams = students.flatMap(s => s.exams.filter(e => e.teacherId === t.id).map(e => ({ ...e, studentName: s.name, studentId: s.id })));
+    const done = tExams.filter(e => examHasDocs(e)).length;
+    const tPct = tExams.length ? Math.round(done / tExams.length * 100) : 0;
+    return `
+    <div class="card" style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" style="width:46px;height:46px;font-size:17px;">${t.name.charAt(0)}</div>
+          <div>
+            <div style="font-size:17px;font-weight:800;">${t.name}</div>
+            <div style="font-size:13px;color:var(--muted);">📞 ${t.phone} &nbsp;|&nbsp; ${t.subjects||''}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="badge badge-blue">${students.length} תלמידים</span>
+          <span class="badge ${tPct===100?'badge-green':tPct>0?'badge-yellow':'badge-red'}">${done}/${tExams.length} מסמכים</span>
+          <a href="${waLink(t.phone,'שלום '+t.name+', תזכורת להעלאת מסמכים.')}" target="_blank" class="btn btn-wa btn-sm">📱 וואצ׳אפ</a>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px;"><span>התקדמות מסמכים</span><span>${tPct}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${tPct}%"></div></div>
+      </div>
+      ${students.length === 0 ? '<p style="color:var(--muted);font-size:13px;text-align:center;padding:8px;">אין תלמידים משויכים</p>' : `
+      <div class="table-wrap"><table>
+        <thead><tr><th>תלמיד</th><th>טלפון הורה</th><th>התאמות</th><th>בחינה</th><th>תאריך</th><th>משווה עד</th><th>ימים</th><th>מסמך</th></tr></thead>
+        <tbody>
+          ${students.flatMap(s => {
+            const myExams = s.exams.filter(e => e.teacherId === t.id);
+            if (myExams.length === 0) return [`<tr>
+              <td><strong>${s.name}</strong></td>
+              <td>${s.parentPhone||'—'}</td>
+              <td><div class="acc-list">${s.accommodations.slice(0,3).map(a=>`<span class="acc-tag">${a}</span>`).join('')}${s.accommodations.length>3?`<span class="acc-tag">+${s.accommodations.length-3}</span>`:''}</div></td>
+              <td colspan="5" style="color:var(--muted);">אין בחינות רשומות</td>
+            </tr>`];
+            return myExams.map((e,i) => {
+              const days = daysUntil(e.examDate);
+              const cls = days<=0?'':days<=3?'days-urgent':days<=7?'days-soon':'days-ok';
+              const hasDocs = examHasDocs(e);
+              return `<tr>
+                ${i===0 ? `<td rowspan="${myExams.length}"><strong>${s.name}</strong></td><td rowspan="${myExams.length}">${s.parentPhone||'—'}</td><td rowspan="${myExams.length}"><div class="acc-list">${s.accommodations.slice(0,3).map(a=>`<span class="acc-tag">${a}</span>`).join('')}${s.accommodations.length>3?`<span class="acc-tag">+${s.accommodations.length-3}</span>`:''}</div></td>` : ''}
+                <td>${e.subject}</td>
+                <td>${fmtDate(e.examDate)}</td>
+                <td>${fmtDate(e.preExamDate)}</td>
+                <td class="${cls}">${days>0?days+' י׳':days===0?'היום':'עבר'}</td>
+                <td><span class="badge ${hasDocs?'badge-green':'badge-red'}">${hasDocs?'✅':'⚠️'}</span></td>
+              </tr>`;
+            });
+          }).join('')}
+        </tbody>
+      </table></div>`}
+    </div>`;
+  }).join('') || '<div class="empty-state"><div class="empty-icon">👩‍🏫</div><p>אין מורים</p></div>';
+
+  // ---- by-student panel ----
+  const byStudentHTML = db.students.map(s => {
+    const teachers = s.teacherIds.map(id => teacherById(id)).filter(Boolean);
+    const sPct = uploadProgress(s);
+    const done = s.exams.filter(e => examHasDocs(e)).length;
+    return `
+    <div class="card" style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="student-avatar">${s.name.charAt(0)}</div>
+          <div>
+            <div style="font-size:17px;font-weight:800;">${s.name}</div>
+            <div style="font-size:13px;color:var(--muted);">📞 ${s.parentPhone||'—'} &nbsp;|&nbsp; סיסמת הורה: <code style="background:var(--bg);padding:1px 6px;border-radius:4px;">${s.parentPassword}</code></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="badge badge-purple">${s.accommodations.length} התאמות</span>
+          <span class="badge ${sPct===100?'badge-green':sPct>0?'badge-yellow':'badge-red'}">${done}/${s.exams.length} מסמכים</span>
+          ${s.parentPhone ? `<a href="${waLink(s.parentPhone,'שלום הורי '+s.name+', עדכון מהמערכת.')}" target="_blank" class="btn btn-wa btn-sm">📱 הורה</a>` : ''}
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px;"><span>התקדמות מסמכים</span><span>${sPct}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${sPct}%"></div></div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">ההתאמות:</div>
+        <div class="acc-list">${s.accommodations.map(a=>`<span class="acc-tag">${a}</span>`).join('') || '<span style="color:var(--muted)">אין</span>'}</div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">המורים המלמדים:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        ${teachers.map(t => `<div style="background:var(--accent);border-radius:10px;padding:6px 12px;font-size:13px;display:flex;align-items:center;gap:8px;">
+          <strong>${t.name}</strong> <span style="color:var(--muted);">${t.subjects||''}</span>
+          <a href="${waLink(t.phone,'שלום '+t.name+', בנוגע ל'+s.name+'.')}" target="_blank" class="btn btn-wa btn-sm" style="padding:3px 8px;">📱</a>
+        </div>`).join('') || '<span style="color:var(--muted);font-size:13px;">אין מורים</span>'}
+      </div>
+      ${s.exams.length > 0 ? `
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">הבחינות:</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>מקצוע</th><th>מורה</th><th>תאריך בחינה</th><th>משווה עד</th><th>ימים</th><th>מסמך</th><th>פעולות</th></tr></thead>
+        <tbody>
+          ${s.exams.sort((a,b)=>new Date(a.examDate)-new Date(b.examDate)).map(e => {
+            const days = daysUntil(e.examDate);
+            const cls = days<=0?'':days<=3?'days-urgent':days<=7?'days-soon':'days-ok';
+            const hasDocs = examHasDocs(e);
+            const teacher = teacherById(e.teacherId);
+            return `<tr>
+              <td><strong>${e.subject}</strong></td>
+              <td>${teacher ? teacher.name : '—'}</td>
+              <td>${fmtDate(e.examDate)}</td>
+              <td>${fmtDate(e.preExamDate)}</td>
+              <td class="${cls}">${days>0?days+' י׳':days===0?'היום':'עבר'}</td>
+              <td><span class="badge ${hasDocs?'badge-green':'badge-red'}">${hasDocs?'✅ הועלה':'⚠️ חסר'}</span></td>
+              <td style="display:flex;gap:4px;">
+                <button class="btn btn-sm btn-ghost" onclick="openAdminEditExam('${s.id}','${e.id}')">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="adminDeleteExamFromDash('${s.id}','${e.id}')">🗑️</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>` : '<p style="color:var(--muted);font-size:13px;">אין בחינות רשומות — <button class="btn btn-sm btn-ghost" onclick="openStudentExams(\''+s.id+'\')">+ הוסף</button></p>'}
+    </div>`;
+  }).join('') || '<div class="empty-state"><div class="empty-icon">🧑‍🎓</div><p>אין תלמידים</p></div>';
+
+  setContent(`
+    <div class="page-header"><h2>📊 לוח בקרה — מנהל</h2><p>סקירה כללית של המערכת</p></div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${totalTeachers}</div><div class="stat-label">מורים פעילים</div></div>
+      <div class="stat-card"><div class="stat-num">${totalStudents}</div><div class="stat-label">תלמידים עם התאמות</div></div>
+      <div class="stat-card"><div class="stat-num">${totalDocs}/${totalExams}</div><div class="stat-label">מסמכים הועלו</div></div>
+      <div class="stat-card"><div class="stat-num">${pct}%</div><div class="stat-label">השלמת מסמכים</div></div>
+    </div>
+
+    ${urgentExams.length ? `
+    <div class="reminder-banner">
+      <span>⚠️</span>
+      <div><strong>בחינות קרובות בשבוע הקרוב:</strong>
+        ${urgentExams.map(e => `${e.studentName} — ${e.subject} (${fmtDate(e.examDate)})`).join(' | ')}
+      </div>
+    </div>` : ''}
+
+    <div class="role-tabs" style="max-width:340px;margin-bottom:20px;">
+      <button class="role-tab ${adminDashTab==='teacher'?'active':''}" onclick="renderAdminDashboard('teacher')">👩‍🏫 לפי מורה</button>
+      <button class="role-tab ${adminDashTab==='student'?'active':''}" onclick="renderAdminDashboard('student')">🧑‍🎓 לפי תלמיד</button>
+    </div>
+
+    <div id="dashTeacher" style="display:${adminDashTab==='teacher'?'block':'none'}">
+      ${byTeacherHTML}
+    </div>
+    <div id="dashStudent" style="display:${adminDashTab==='student'?'block':'none'}">
+      ${byStudentHTML}
+    </div>
+  `);
+}
+
+function adminDeleteExamFromDash(sid, eid) {
+  if (!confirm('למחוק בחינה זו?')) return;
+  const s = studentById(sid);
+  s.exams = s.exams.filter(e => e.id !== eid);
+  saveDB(db);
+  renderAdminDashboard();
+}
+
+// ============================================================
+// ADMIN — TEACHERS
+// ============================================================
+function renderAdminTeachers() {
+  setActiveNav('renderAdminTeachers');
+  setContent(`
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <div><h2>👩‍🏫 ניהול מורים</h2><p>הוספה ועריכת מורים</p></div>
+      <button class="btn btn-primary" onclick="openAddTeacher()">+ הוסף מורה</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap"><table>
+        <thead><tr><th>שם</th><th>טלפון</th><th>מקצועות</th><th>סיסמה</th><th>תלמידים</th><th>פעולות</th></tr></thead>
+        <tbody>
+          ${db.teachers.map(t => `<tr>
+            <td><strong>${t.name}</strong></td>
+            <td>
+              ${t.phone}
+              <button class="btn btn-sm btn-ghost" style="padding:2px 7px;margin-right:4px;" onclick="editTeacherPhone('${t.id}')" title="ערוך טלפון">✏️</button>
+            </td>
+            <td>${t.subjects||'—'}</td>
+            <td><code style="background:var(--bg);padding:2px 8px;border-radius:6px;">${t.password}</code></td>
+            <td>${studentsOfTeacher(t.id).length}</td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-sm btn-ghost" onclick="openEditTeacher('${t.id}')">✏️ ערוך</button>
+              <a href="${waLink(t.phone,'שלום '+t.name+', הודעה מהנהלת בית הספר.')}" target="_blank" class="btn btn-sm btn-wa">📱 וואצ׳אפ</a>
+              <button class="btn btn-sm btn-danger" onclick="deleteTeacher('${t.id}')">🗑️</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+  `);
+}
+
+function openAddTeacher() {
+  openModal(`
+    <div class="modal-title">הוסף מורה חדש <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><label>שם מלא</label><input class="form-control" id="mt_name" placeholder="שם המורה"></div>
+      <div class="form-group"><label>טלפון</label><input class="form-control" id="mt_phone" placeholder="05X-XXXXXXX"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>מקצועות</label><input class="form-control" id="mt_subjects" placeholder="מתמטיקה, אנגלית..."></div>
+      <div class="form-group"><label>סיסמה</label><input class="form-control" id="mt_pass" placeholder="סיסמה לכניסה"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="addTeacher()">הוסף מורה</button>
+  `);
+}
+
+function addTeacher() {
+  const t = {
+    id: uid(),
+    name: document.getElementById('mt_name').value.trim(),
+    phone: document.getElementById('mt_phone').value.trim(),
+    subjects: document.getElementById('mt_subjects').value.trim(),
+    password: document.getElementById('mt_pass').value.trim(),
+  };
+  if (!t.name || !t.password) return alert('שם וסיסמה הם שדות חובה');
+  db.teachers.push(t);
+  saveDB(db);
+  closeModal();
+  renderAdminTeachers();
+}
+
+function openEditTeacher(id) {
+  const t = teacherById(id);
+  openModal(`
+    <div class="modal-title">ערוך מורה <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><label>שם מלא</label><input class="form-control" id="et_name" value="${t.name}"></div>
+      <div class="form-group"><label>טלפון</label><input class="form-control" id="et_phone" value="${t.phone}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>מקצועות</label><input class="form-control" id="et_subjects" value="${t.subjects||''}"></div>
+      <div class="form-group"><label>סיסמה</label><input class="form-control" id="et_pass" value="${t.password}"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="editTeacher('${id}')">שמור שינויים</button>
+  `);
+}
+
+function editTeacher(id) {
+  const t = teacherById(id);
+  t.name = document.getElementById('et_name').value.trim();
+  t.phone = document.getElementById('et_phone').value.trim();
+  t.subjects = document.getElementById('et_subjects').value.trim();
+  t.password = document.getElementById('et_pass').value.trim();
+  saveDB(db);
+  closeModal();
+  renderAdminTeachers();
+}
+
+function deleteTeacher(id) {
+  if (!confirm('למחוק מורה זה?')) return;
+  db.teachers = db.teachers.filter(t => t.id !== id);
+  db.students.forEach(s => s.teacherIds = s.teacherIds.filter(t => t !== id));
+  saveDB(db);
+  renderAdminTeachers();
+}
+
+// ============================================================
+// ADMIN — STUDENTS
+// ============================================================
+const ALL_ACCOMMODATIONS = [
+  'זמן נוסף 25%','זמן נוסף 50%','קורא מסך','הגדלת טקסט','עורך טקסט',
+  'מחשב נייד','בית ספר נפרד','ישיבה בחזית','הסבר בעל פה','מגיש שאלות',
+  'הגדלת שאלון','ספר עזר','מחשבון','הפסקות','ניווט מיוחד'
+];
+
+function renderAdminStudents() {
+  setActiveNav('renderAdminStudents');
+  setContent(`
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <div><h2>🧑‍🎓 ניהול תלמידים</h2><p>תלמידים עם התאמות</p></div>
+      <button class="btn btn-primary" onclick="openAddStudent()">+ הוסף תלמיד</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap"><table>
+        <thead><tr><th>שם תלמיד</th><th>כיתה</th><th>טלפון הורה</th><th>סיסמת הורה</th><th>התאמות</th><th>מורים</th><th>בחינות</th><th>התקדמות</th><th>פעולות</th></tr></thead>
+        <tbody>
+          ${db.students.map(s => {
+            const pct = uploadProgress(s);
+            const teachers = s.teacherIds.map(id => teacherById(id)).filter(Boolean);
+            return `<tr>
+              <td><strong>${s.name}</strong></td>
+              <td><span class="badge badge-blue">${s.class||'—'}</span></td>
+              <td>
+                ${s.parentPhone||'—'}
+                <button class="btn btn-sm btn-ghost" style="padding:2px 7px;margin-right:4px;" onclick="editParentPhone('${s.id}')" title="ערוך טלפון">✏️</button>
+              </td>
+              <td><code style="background:var(--bg);padding:2px 8px;border-radius:6px;">${s.parentPassword}</code></td>
+              <td><div class="acc-list">${s.accommodations.map(a => `<span class="acc-tag">${a}</span>`).join('')}</div></td>
+              <td>${teachers.map(t=>t.name).join(', ')||'—'}</td>
+              <td>
+                <button class="btn btn-sm btn-ghost" onclick="openStudentExams('${s.id}')">📅 ${s.exams.length} בחינות</button>
+              </td>
+              <td><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><small>${pct}%</small></td>
+              <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-sm btn-ghost" onclick="openEditStudent('${s.id}')">✏️ ערוך</button>
+                ${s.parentPhone ? `<a href="${waLink(s.parentPhone,'שלום הורי '+s.name+', עדכון מהמערכת.')}" target="_blank" class="btn btn-sm btn-wa">📱 הורה</a>` : ''}
+                <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.id}')">🗑️</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>
+  `);
+}
+
+function openAddStudent() {
+  openModal(`
+    <div class="modal-title">הוסף תלמיד <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-section">
+      <div class="form-section-title">פרטים אישיים</div>
+      <div class="form-row">
+        <div class="form-group"><label>שם תלמיד</label><input class="form-control" id="as_name" placeholder="שם מלא"></div>
+        <div class="form-group"><label>כיתה</label>
+  <select class="form-control" id="as_class">
+    <option value="">בחר כיתה</option>
+    <option value="י1">י1</option>
+    <option value="י2">י2</option>
+    <option value="י5">י5</option>
+  </select>
+</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>טלפון הורה</label><input class="form-control" id="as_phone" placeholder="05X-XXXXXXX"></div>
+        <div class="form-group"><label>סיסמת הורה</label><input class="form-control" id="as_pass" placeholder="סיסמה אישית"></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">התאמות</div>
+      <div class="checkbox-grid">
+        ${ALL_ACCOMMODATIONS.map(a => `<label class="checkbox-item"><input type="checkbox" name="acc_new" value="${a}"> ${a}</label>`).join('')}
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">שיוך מורים</div>
+      <div class="checkbox-grid">
+        ${db.teachers.map(t => `<label class="checkbox-item"><input type="checkbox" name="teacher_new" value="${t.id}"> ${t.name}</label>`).join('')}
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="addStudent()">הוסף תלמיד</button>
+  `);
+}
+
+function addStudent() {
+  const accs = [...document.querySelectorAll('input[name="acc_new"]:checked')].map(c => c.value);
+  const tids = [...document.querySelectorAll('input[name="teacher_new"]:checked')].map(c => c.value);
+  const s = {
+    id: uid(),
+    name: document.getElementById('as_name').value.trim(),
+    class: document.getElementById('as_class').value.trim(),
+    parentPhone: document.getElementById('as_phone').value.trim(),
+    parentPassword: document.getElementById('as_pass').value.trim(),
+    accommodations: accs,
+    teacherIds: tids,
+    exams: []
+  };
+  if (!s.name || !s.parentPassword) return alert('שם וסיסמת הורה הם שדות חובה');
+  db.students.push(s);
+  saveDB(db);
+  closeModal();
+  renderAdminStudents();
+}
+
+function openEditStudent(id) {
+  const s = studentById(id);
+  openModal(`
+    <div class="modal-title">ערוך תלמיד: ${s.name} <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><label>שם תלמיד</label><input class="form-control" id="es_name" value="${s.name}"></div>
+      <div class="form-group"><label>כיתה</label><input class="form-control" id="es_class" value="${s.class||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>טלפון הורה</label><input class="form-control" id="es_phone" value="${s.parentPhone||''}"></div>
+      <div class="form-group"><label>סיסמת הורה</label><input class="form-control" id="es_pass" value="${s.parentPassword}"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">התאמות</div>
+      <div class="checkbox-grid">
+        ${ALL_ACCOMMODATIONS.map(a => `<label class="checkbox-item"><input type="checkbox" name="acc_edit" value="${a}" ${s.accommodations.includes(a)?'checked':''}> ${a}</label>`).join('')}
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">שיוך מורים</div>
+      <div class="checkbox-grid">
+        ${db.teachers.map(t => `<label class="checkbox-item"><input type="checkbox" name="teacher_edit" value="${t.id}" ${s.teacherIds.includes(t.id)?'checked':''}> ${t.name}</label>`).join('')}
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="editStudent('${id}')">שמור שינויים</button>
+  `);
+}
+
+function editStudent(id) {
+  const s = studentById(id);
+  s.name = document.getElementById('es_name').value.trim();
+  s.class = document.getElementById('es_class').value.trim();
+  s.parentPhone = document.getElementById('es_phone').value.trim();
+  s.parentPassword = document.getElementById('es_pass').value.trim();
+  s.accommodations = [...document.querySelectorAll('input[name="acc_edit"]:checked')].map(c => c.value);
+  s.teacherIds = [...document.querySelectorAll('input[name="teacher_edit"]:checked')].map(c => c.value);
+  saveDB(db);
+  closeModal();
+  renderAdminStudents();
+}
+
+function deleteStudent(id) {
+  if (!confirm('למחוק תלמיד זה?')) return;
+  db.students = db.students.filter(s => s.id !== id);
+  saveDB(db);
+  renderAdminStudents();
+}
+
+// quick inline phone edit for teacher
+function editTeacherPhone(id) {
+  const t = teacherById(id);
+  const newPhone = prompt('עדכן טלפון למורה ' + t.name + ':', t.phone);
+  if (newPhone === null) return;
+  t.phone = newPhone.trim();
+  saveDB(db);
+  renderAdminTeachers();
+}
+
+// quick inline phone edit for parent
+function editParentPhone(sid) {
+  const s = studentById(sid);
+  const newPhone = prompt('עדכן טלפון הורה של ' + s.name + ':', s.parentPhone || '');
+  if (newPhone === null) return;
+  s.parentPhone = newPhone.trim();
+  saveDB(db);
+  renderAdminStudents();
+}
+
+// ============================================================
+// ADMIN — EXAMS (לוח מבחנים)
+// ============================================================
+function renderAdminExams() {
+  setActiveNav('renderAdminExams');
+  const allExams = db.students.flatMap(s =>
+    s.exams.map(e => ({ ...e, studentId: s.id, studentName: s.name, studentPhone: s.parentPhone }))
+  ).sort((a,b) => new Date(a.examDate) - new Date(b.examDate));
+
+  setContent(`
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <div><h2>📅 לוח מבחנים</h2><p>כל הבחינות בכל התלמידים</p></div>
+      <button class="btn btn-primary" onclick="openAdminAddExam()">+ הוסף בחינה</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap"><table>
+        <thead><tr><th>תלמיד</th><th>מורה</th><th>מקצוע</th><th>תאריך בחינה</th><th>מבחן משווה עד</th><th>ימים</th><th>מסמך</th><th>פעולות</th></tr></thead>
+        <tbody>
+          ${allExams.length === 0 ? `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">אין בחינות</td></tr>` :
+            allExams.map(e => {
+              const days = daysUntil(e.examDate);
+              const cls = days <= 0 ? '' : days <= 3 ? 'days-urgent' : days <= 7 ? 'days-soon' : 'days-ok';
+              const hasDocs = examHasDocs(e);
+              const teacher = teacherById(e.teacherId);
+              return `<tr>
+                <td><strong>${e.studentName}</strong></td>
+                <td>${teacher ? teacher.name : '—'}</td>
+                <td>${e.subject}</td>
+                <td>${fmtDate(e.examDate)}</td>
+                <td>${fmtDate(e.preExamDate)}</td>
+                <td class="${cls}"><strong>${days > 0 ? days + ' ימים' : days === 0 ? 'היום' : 'עבר'}</strong></td>
+                <td><span class="badge ${hasDocs ? 'badge-green' : 'badge-red'}">${hasDocs ? '✅' : '⚠️'}</span></td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button class="btn btn-sm btn-ghost" onclick="openAdminEditExam('${e.studentId}','${e.id}')">✏️ ערוך</button>
+                  <button class="btn btn-sm btn-danger" onclick="adminDeleteExam('${e.studentId}','${e.id}')">🗑️</button>
+                </td>
+              </tr>`;
+            }).join('')
+          }
+        </tbody>
+      </table></div>
+    </div>
+  `);
+}
+
+let addExamSelMode = 'name'; // 'name' | 'class'
+
+function openAdminAddExam() {
+  const classes = [...new Set(db.students.map(s => s.class).filter(Boolean))].sort();
+  openModal(`
+    <div class="modal-title">📅 הוסף בחינה <button class="modal-close" onclick="closeModal()">✕</button></div>
+
+    <div class="role-tabs" style="margin-bottom:18px;">
+      <button class="role-tab ${addExamSelMode==='name'?'active':''}" onclick="switchAddExamMode('name')">🧑‍🎓 לפי שם תלמיד</button>
+      <button class="role-tab ${addExamSelMode==='class'?'active':''}" onclick="switchAddExamMode('class')">🏫 לפי כיתה</button>
+    </div>
+
+    <div id="aae_byName" style="display:${addExamSelMode==='name'?'block':'none'};">
+      <div class="form-group"><label>בחר תלמידים (ניתן לבחור כמה)</label>
+        <div class="checkbox-grid" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:10px;">
+          ${db.students.map(s => `<label class="checkbox-item"><input type="checkbox" name="sel_student" value="${s.id}"> ${s.name} ${s.class?'<span class="badge badge-blue" style="font-size:10px;">'+s.class+'</span>':''}</label>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div id="aae_byClass" style="display:${addExamSelMode==='class'?'block':'none'};">
+      <div class="form-group"><label>בחר כיתה</label>
+        <select class="form-control" id="aae_class" onchange="previewClassStudents()">
+          <option value="">בחר כיתה...</option>
+          ${classes.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </div>
+      <div id="classStudentPreview" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="form-group" style="margin-top:14px;"><label>מורה</label>
+      <select class="form-control" id="aae_teacher">
+        <option value="">בחר מורה...</option>
+        ${db.teachers.map(t => `<option value="${t.id}">${t.name} — ${t.subjects||''}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>מקצוע / נושא</label>
+      <input class="form-control" id="aae_subject" placeholder="מתמטיקה, אנגלית...">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>תאריך הבחינה</label><input class="form-control" id="aae_date" type="date"></div>
+      <div class="form-group"><label>מבחן משווה עד תאריך</label><input class="form-control" id="aae_pre" type="date"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="adminAddExam()" style="margin-top:6px;">✅ הוסף בחינה ושלח הודעות</button>
+  `);
+}
+
+function switchAddExamMode(mode) {
+  addExamSelMode = mode;
+  document.getElementById('aae_byName').style.display = mode === 'name' ? 'block' : 'none';
+  document.getElementById('aae_byClass').style.display = mode === 'class' ? 'block' : 'none';
+  document.querySelectorAll('.role-tab').forEach((t,i) => t.classList.toggle('active', ['name','class'][i] === mode));
+}
+
+function previewClassStudents() {
+  const cls = document.getElementById('aae_class').value;
+  const students = db.students.filter(s => s.class === cls);
+  const el = document.getElementById('classStudentPreview');
+  if (!cls || !students.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="background:var(--accent);border-radius:10px;padding:10px 14px;font-size:13px;">
+    <strong>${students.length} תלמידים בכיתה ${cls}:</strong>
+    ${students.map(s => `<span class="acc-tag" style="margin:2px;">${s.name}</span>`).join('')}
+  </div>`;
+}
+
+function getSelectedStudentsForExam() {
+  if (addExamSelMode === 'name') {
+    return [...document.querySelectorAll('input[name="sel_student"]:checked')].map(c => studentById(c.value)).filter(Boolean);
+  } else {
+    const cls = document.getElementById('aae_class').value;
+    return db.students.filter(s => s.class === cls);
+  }
+}
+
+function adminAddExam() {
+  const selectedStudents = getSelectedStudentsForExam();
+  if (!selectedStudents.length) return alert('יש לבחור לפחות תלמיד אחד');
+  const subject = document.getElementById('aae_subject').value.trim();
+  const examDate = document.getElementById('aae_date').value;
+  const preExamDate = document.getElementById('aae_pre').value;
+  const teacherId = document.getElementById('aae_teacher').value;
+  if (!subject || !examDate) return alert('מקצוע ותאריך הם שדות חובה');
+
+  selectedStudents.forEach(s => {
+    if (!s.appendices) s.appendices = [];
+    s.exams.push({ id: uid(), subject, examDate, preExamDate, teacherId,
+      originalExam: { fileName: null, url: null, grade: '' },
+      comparativeExam: { fileName: null, url: null, grade: '', accommodationsUsed: [] }
+    });
+  });
+  saveDB(db);
+
+  // show WhatsApp notification modal
+  openNotifyModal(selectedStudents, subject, examDate, preExamDate, teacherId);
+}
+
+function openNotifyModal(students, subject, examDate, preExamDate, teacherId) {
+  const teacher = teacherById(teacherId);
+  const teacherMsg = teacher
+    ? `שלום ${teacher.name}, נקבעה בחינה חדשה: *${subject}* בתאריך ${fmtDate(examDate)}. יש להכין מבחן משווה עד ${fmtDate(preExamDate)||'—'} עבור התלמידים: ${students.map(s=>s.name).join(', ')}.`
+    : '';
+
+  const teacherBlock = teacher ? `
+    <div style="background:var(--accent);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;">📩 הודעה למורה — ${teacher.name}</div>
+      <div style="font-size:12px;color:var(--muted);background:white;padding:8px;border-radius:8px;margin-bottom:8px;line-height:1.6;">${teacherMsg}</div>
+      <a href="${waLink(teacher.phone, teacherMsg)}" target="_blank" class="btn btn-wa btn-block">📱 שלח וואצ׳אפ ל${teacher.name}</a>
+    </div>` : '';
+
+  const parentBlocks = students.filter(s => s.parentPhone).map(s => {
+    const msg = `שלום הורי ${s.name}, נקבעה בחינה חדשה: *${subject}* בתאריך ${fmtDate(examDate)}.${preExamDate ? ' המורה יכין מבחן משווה עד ' + fmtDate(preExamDate) + '.' : ''} ניתן לעקוב אחר ההתקדמות במערכת.`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <strong>${s.name}</strong>
+        <div style="font-size:12px;color:var(--muted);">📞 ${s.parentPhone}</div>
+      </div>
+      <a href="${waLink(s.parentPhone, msg)}" target="_blank" class="btn btn-wa btn-sm">📱 שלח</a>
+    </div>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-title">✅ הבחינה נוספה! שלח הודעות <button class="modal-close" onclick="closeModal();renderAdminExams();">✕</button></div>
+    <div style="background:#dcfce7;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:14px;">
+      <strong>הבחינה נוספה בהצלחה ל-${students.length} תלמידים:</strong>
+      ${students.map(s=>`<span class="acc-tag" style="margin:2px;">${s.name}</span>`).join('')}
+    </div>
+    ${teacherBlock}
+    ${parentBlocks ? `<div style="font-size:13px;font-weight:700;margin-bottom:10px;">📩 הודעות להורים:</div>${parentBlocks}` : ''}
+    <button class="btn btn-secondary btn-block" style="margin-top:16px;" onclick="closeModal();renderAdminExams();">סגור</button>
+  `);
+}
+
+function openAdminEditExam(sid, eid) {
+  const s = studentById(sid);
+  const e = s.exams.find(ex => ex.id === eid);
+  const myTeachers = s.teacherIds.map(id => teacherById(id)).filter(Boolean);
+  openModal(`
+    <div class="modal-title">ערוך בחינה — ${s.name} <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>מורה</label>
+      <select class="form-control" id="aee_teacher">
+        ${db.teachers.map(t => `<option value="${t.id}" ${e.teacherId === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>מקצוע</label><input class="form-control" id="aee_subject" value="${e.subject}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>תאריך הבחינה</label><input class="form-control" id="aee_date" type="date" value="${e.examDate}"></div>
+      <div class="form-group"><label>מבחן משווה עד</label><input class="form-control" id="aee_pre" type="date" value="${e.preExamDate||''}"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="adminSaveExam('${sid}','${eid}')">שמור שינויים</button>
+  `);
+}
+
+function adminSaveExam(sid, eid) {
+  const s = studentById(sid);
+  const e = s.exams.find(ex => ex.id === eid);
+  e.subject = document.getElementById('aee_subject').value.trim();
+  e.examDate = document.getElementById('aee_date').value;
+  e.preExamDate = document.getElementById('aee_pre').value;
+  e.teacherId = document.getElementById('aee_teacher').value;
+  saveDB(db);
+  closeModal();
+  renderAdminExams();
+}
+
+function adminDeleteExam(sid, eid) {
+  if (!confirm('למחוק בחינה זו?')) return;
+  const s = studentById(sid);
+  s.exams = s.exams.filter(e => e.id !== eid);
+  saveDB(db);
+  renderAdminExams();
+}
+
+// open modal with all exams of one student (from student table)
+function openStudentExams(sid) {
+  const s = studentById(sid);
+  const renderExamRows = () => s.exams.map((e,i) => {
+    const t = teacherById(e.teacherId);
+    return `<tr>
+      <td>${e.subject}</td>
+      <td>${t ? t.name : '—'}</td>
+      <td>${fmtDate(e.examDate)}</td>
+      <td>${fmtDate(e.preExamDate)}</td>
+      <td><span class="badge ${e.docs&&e.docs.length?'badge-green':'badge-red'}">${e.docs&&e.docs.length?'✅':'⚠️'}</span></td>
+      <td style="display:flex;gap:4px;">
+        <button class="btn btn-sm btn-ghost" onclick="openAdminEditExamInline('${sid}','${e.id}')">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="adminDeleteExamInline('${sid}','${e.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-title">📅 מבחנים — ${s.name} <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div id="examTableWrap">
+      ${s.exams.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>מקצוע</th><th>מורה</th><th>תאריך</th><th>משווה עד</th><th>מסמך</th><th>פעולות</th></tr></thead>
+        <tbody id="examTbody">${renderExamRows()}</tbody>
+      </table></div>` : '<p style="color:var(--muted);text-align:center;padding:16px;">אין בחינות</p>'}
+    </div>
+    <hr style="margin:16px 0;border:none;border-top:1px solid var(--border);">
+    <div class="form-section-title">הוסף בחינה חדשה</div>
+    <div class="form-group"><label>מורה</label>
+      <select class="form-control" id="se_teacher">
+        ${s.teacherIds.map(tid => teacherById(tid)).filter(Boolean).map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+        ${db.teachers.filter(t => !s.teacherIds.includes(t.id)).map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>מקצוע</label><input class="form-control" id="se_subject" placeholder="מקצוע..."></div>
+    <div class="form-row">
+      <div class="form-group"><label>תאריך בחינה</label><input class="form-control" id="se_date" type="date"></div>
+      <div class="form-group"><label>מבחן משווה עד</label><input class="form-control" id="se_pre" type="date"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="addExamToStudentModal('${sid}')">הוסף בחינה</button>
+  `);
+}
+
+function addExamToStudentModal(sid) {
+  const s = studentById(sid);
+  const exam = {
+    id: uid(),
+    subject: document.getElementById('se_subject').value.trim(),
+    examDate: document.getElementById('se_date').value,
+    preExamDate: document.getElementById('se_pre').value,
+    teacherId: document.getElementById('se_teacher').value,
+    originalExam: { fileName: null, url: null, grade: '' },
+    comparativeExam: { fileName: null, url: null, grade: '', accommodationsUsed: [] }
+  };
+  if (!exam.subject || !exam.examDate) return alert('מקצוע ותאריך הם שדות חובה');
+  s.exams.push(exam);
+  saveDB(db);
+  openStudentExams(sid);
+}
+
+function openAdminEditExamInline(sid, eid) {
+  closeModal();
+  setTimeout(() => openAdminEditExamAndReturn(sid, eid), 100);
+}
+function openAdminEditExamAndReturn(sid, eid) {
+  const s = studentById(sid);
+  const e = s.exams.find(ex => ex.id === eid);
+  openModal(`
+    <div class="modal-title">ערוך בחינה — ${s.name} / ${e.subject} <button class="modal-close" onclick="openStudentExams('${sid}')">✕</button></div>
+    <div class="form-group"><label>מורה</label>
+      <select class="form-control" id="aee_teacher">
+        ${db.teachers.map(t => `<option value="${t.id}" ${e.teacherId === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>מקצוע</label><input class="form-control" id="aee_subject" value="${e.subject}"></div>
+    <div class="form-row">
+      <div class="form-group"><label>תאריך הבחינה</label><input class="form-control" id="aee_date" type="date" value="${e.examDate}"></div>
+      <div class="form-group"><label>מבחן משווה עד</label><input class="form-control" id="aee_pre" type="date" value="${e.preExamDate||''}"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary btn-block" onclick="adminSaveExamReturn('${sid}','${eid}')">שמור</button>
+      <button class="btn btn-secondary btn-block" onclick="openStudentExams('${sid}')">ביטול</button>
+    </div>
+  `);
+}
+function adminSaveExamReturn(sid, eid) {
+  const s = studentById(sid);
+  const e = s.exams.find(ex => ex.id === eid);
+  e.subject = document.getElementById('aee_subject').value.trim();
+  e.examDate = document.getElementById('aee_date').value;
+  e.preExamDate = document.getElementById('aee_pre').value;
+  e.teacherId = document.getElementById('aee_teacher').value;
+  saveDB(db);
+  openStudentExams(sid);
+}
+function adminDeleteExamInline(sid, eid) {
+  if (!confirm('למחוק בחינה זו?')) return;
+  const s = studentById(sid);
+  s.exams = s.exams.filter(e => e.id !== eid);
+  saveDB(db);
+  openStudentExams(sid);
+}
+
+// ============================================================
+// ============================================================
+// ADMIN — GRADES TABLE
+// ============================================================
+let gradesFilter = { teacher: '', class: '', subject: '', hasGrade: 'all' };
+
+function renderAdminGrades() {
+  setActiveNav('renderAdminGrades');
+
+  // build flat rows
+  const rows = db.students.flatMap(s =>
+    s.exams.map(e => {
+      const teacher = teacherById(e.teacherId);
+      const origGrade = e.originalExam && e.originalExam.grade ? e.originalExam.grade : '';
+      const compGrade = e.comparativeExam && e.comparativeExam.grade ? e.comparativeExam.grade : '';
+      const origNum = parseFloat(origGrade);
+      const compNum = parseFloat(compGrade);
+      const diff = (!isNaN(origNum) && !isNaN(compNum)) ? (compNum - origNum) : null;
+      return {
+        studentId: s.id, studentName: s.name, class: s.class || '',
+        teacherName: teacher ? teacher.name : '—', subject: e.subject,
+        examDate: e.examDate, preExamDate: e.preExamDate,
+        origGrade, compGrade, diff,
+        accommodations: s.accommodations,
+        usedAccommodations: (e.comparativeExam && e.comparativeExam.accommodationsUsed) || [],
+        hasOrigDoc: !!(e.originalExam && e.originalExam.fileName),
+        hasCompDoc: !!(e.comparativeExam && e.comparativeExam.fileName),
+      };
+    })
+  );
+
+  // unique filter options
+  const teachers = [...new Set(rows.map(r => r.teacherName))].filter(t => t !== '—');
+  const classes  = [...new Set(rows.map(r => r.class))].filter(Boolean).sort();
+  const subjects = [...new Set(rows.map(r => r.subject))].sort();
+
+  // apply filters
+  let filtered = rows.filter(r => {
+    if (gradesFilter.teacher  && r.teacherName !== gradesFilter.teacher) return false;
+    if (gradesFilter.class    && r.class !== gradesFilter.class) return false;
+    if (gradesFilter.subject  && r.subject !== gradesFilter.subject) return false;
+    if (gradesFilter.hasGrade === 'yes' && !r.compGrade) return false;
+    if (gradesFilter.hasGrade === 'no'  && r.compGrade)  return false;
+    return true;
+  }).sort((a,b) => a.studentName.localeCompare(b.studentName, 'he'));
+
+  // summary stats
+  const withBoth = filtered.filter(r => r.diff !== null);
+  const avgDiff  = withBoth.length ? (withBoth.reduce((s,r) => s + r.diff, 0) / withBoth.length).toFixed(1) : '—';
+  const improved = withBoth.filter(r => r.diff > 0).length;
+
+  setContent(`
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+      <div><h2>🏆 טבלת ציונים</h2><p>כל המבחנים, הציונים וההתאמות</p></div>
+      <button class="btn btn-success" onclick="exportGradesToExcel()">⬇️ ייצוא Excel</button>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat-card"><div class="stat-num">${filtered.length}</div><div class="stat-label">שורות בטבלה</div></div>
+      <div class="stat-card"><div class="stat-num">${filtered.filter(r=>r.compGrade).length}</div><div class="stat-label">ציוני משווה הוזנו</div></div>
+      <div class="stat-card"><div class="stat-num ${avgDiff > 0 ? '' : 'stat-num'}" style="color:${avgDiff > 0 ? 'var(--success)' : avgDiff < 0 ? 'var(--danger)' : 'var(--primary)'}">${avgDiff > 0 ? '+' : ''}${avgDiff}</div><div class="stat-label">ממוצע שיפור</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--success);">${improved}</div><div class="stat-label">שיפרו ציון</div></div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="card" style="padding:14px 18px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="form-group" style="margin-bottom:0;min-width:130px;">
+          <label style="font-size:12px;">מורה</label>
+          <select class="form-control" style="padding:8px;" onchange="gradesFilter.teacher=this.value;renderAdminGrades()">
+            <option value="">הכל</option>
+            ${teachers.map(t => `<option value="${t}" ${gradesFilter.teacher===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;min-width:110px;">
+          <label style="font-size:12px;">כיתה</label>
+          <select class="form-control" style="padding:8px;" onchange="gradesFilter.class=this.value;renderAdminGrades()">
+            <option value="">הכל</option>
+            ${classes.map(c => `<option value="${c}" ${gradesFilter.class===c?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;min-width:140px;">
+          <label style="font-size:12px;">מקצוע</label>
+          <select class="form-control" style="padding:8px;" onchange="gradesFilter.subject=this.value;renderAdminGrades()">
+            <option value="">הכל</option>
+            ${subjects.map(s => `<option value="${s}" ${gradesFilter.subject===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;min-width:140px;">
+          <label style="font-size:12px;">ציון משווה</label>
+          <select class="form-control" style="padding:8px;" onchange="gradesFilter.hasGrade=this.value;renderAdminGrades()">
+            <option value="all" ${gradesFilter.hasGrade==='all'?'selected':''}>הכל</option>
+            <option value="yes" ${gradesFilter.hasGrade==='yes'?'selected':''}>הוזן בלבד</option>
+            <option value="no"  ${gradesFilter.hasGrade==='no' ?'selected':''}>חסר בלבד</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="gradesFilter={teacher:'',class:'',subject:'',hasGrade:'all'};renderAdminGrades()">🔄 אפס</button>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-wrap">
+        <table id="gradesTable">
+          <thead>
+            <tr style="background:var(--bg);">
+              <th>תלמיד</th>
+              <th>כיתה</th>
+              <th>מורה</th>
+              <th>מקצוע</th>
+              <th>תאריך</th>
+              <th>ציון מבחן</th>
+              <th>ציון משווה</th>
+              <th>הפרש</th>
+              <th>מסמכים</th>
+              <th>התאמות כלליות</th>
+              <th>התאמות שהשתמשו</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.length === 0
+              ? `<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:32px;">אין נתונים</td></tr>`
+              : filtered.map(r => {
+                  const diffStr = r.diff !== null ? (r.diff > 0 ? '+'+r.diff : String(r.diff)) : '—';
+                  const diffColor = r.diff === null ? '' : r.diff > 0 ? 'color:var(--success);font-weight:700;' : r.diff < 0 ? 'color:var(--danger);font-weight:700;' : '';
+                  return `<tr>
+                    <td><strong>${r.studentName}</strong></td>
+                    <td><span class="badge badge-blue">${r.class||'—'}</span></td>
+                    <td>${r.teacherName}</td>
+                    <td>${r.subject}</td>
+                    <td style="white-space:nowrap;">${fmtDate(r.examDate)}</td>
+                    <td style="text-align:center;">
+                      ${r.origGrade
+                        ? `<span class="badge badge-blue" style="font-size:13px;padding:4px 12px;">${r.origGrade}</span>`
+                        : `<span style="color:var(--muted);">—</span>`}
+                      ${r.hasOrigDoc ? ' 📄' : ''}
+                    </td>
+                    <td style="text-align:center;">
+                      ${r.compGrade
+                        ? `<span class="badge badge-purple" style="font-size:13px;padding:4px 12px;">${r.compGrade}</span>`
+                        : `<span style="color:var(--danger);">⚠️ חסר</span>`}
+                      ${r.hasCompDoc ? ' 📄' : ''}
+                    </td>
+                    <td style="text-align:center;${diffColor}">${diffStr}</td>
+                    <td style="text-align:center;">
+                      <span class="badge ${(r.hasOrigDoc||r.hasCompDoc)?'badge-green':'badge-red'}">${r.hasOrigDoc?'✅':'—'}/${r.hasCompDoc?'✅':'⚠️'}</span>
+                    </td>
+                    <td><div class="acc-list">${r.accommodations.map(a=>`<span class="acc-tag" style="font-size:10px;">${a}</span>`).join('')||'—'}</div></td>
+                    <td><div class="acc-list">${r.usedAccommodations.length
+                      ? r.usedAccommodations.map(a=>`<span class="acc-tag" style="font-size:10px;background:#dcfce7;color:#15803d;">${a}</span>`).join('')
+                      : '<span style="color:var(--muted);font-size:12px;">לא הוזן</span>'}</div></td>
+                  </tr>`;
+                }).join('')
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `);
+}
+
+function exportGradesToExcel() {
+  const rows = db.students.flatMap(s =>
+    s.exams.map(e => {
+      const teacher = teacherById(e.teacherId);
+      const origGrade = e.originalExam && e.originalExam.grade ? e.originalExam.grade : '';
+      const compGrade = e.comparativeExam && e.comparativeExam.grade ? e.comparativeExam.grade : '';
+      const origNum = parseFloat(origGrade);
+      const compNum = parseFloat(compGrade);
+      const diff = (!isNaN(origNum) && !isNaN(compNum)) ? (compNum - origNum) : '';
+      return {
+        'שם תלמיד':           s.name,
+        'כיתה':               s.class || '',
+        'מורה':               teacher ? teacher.name : '',
+        'מקצוע':              e.subject,
+        'תאריך בחינה':        fmtDate(e.examDate),
+        'מבחן משווה עד':      fmtDate(e.preExamDate),
+        'ציון מבחן רגיל':     origGrade,
+        'ציון מבחן משווה':    compGrade,
+        'הפרש':               diff !== '' ? diff : '',
+        'מסמך רגיל הועלה':    (e.originalExam && e.originalExam.fileName) ? 'כן' : 'לא',
+        'מסמך משווה הועלה':   (e.comparativeExam && e.comparativeExam.fileName) ? 'כן' : 'לא',
+        'התאמות כלליות':      s.accommodations.join(', '),
+        'התאמות שהשתמשו':     ((e.comparativeExam && e.comparativeExam.accommodationsUsed) || []).join(', '),
+        'טלפון הורה':         s.parentPhone || '',
+      };
+    })
+  ).sort((a,b) => a['שם תלמיד'].localeCompare(b['שם תלמיד'], 'he'));
+
+  const ws = XLSX.utils.json_to_sheet(rows, { header: Object.keys(rows[0] || {}) });
+
+  // column widths
+  ws['!cols'] = [
+    {wch:18},{wch:8},{wch:14},{wch:12},{wch:14},{wch:14},
+    {wch:14},{wch:14},{wch:8},{wch:12},{wch:14},{wch:40},{wch:40},{wch:14}
+  ];
+
+  // RTL direction for sheet
+  if (!ws['!sheetView']) ws['!sheetView'] = {};
+  ws['!sheetViews'] = [{ rightToLeft: true }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ציונים והתאמות');
+
+  // summary sheet
+  const summary = db.teachers.map(t => {
+    const students = studentsOfTeacher(t.id);
+    const exams = students.flatMap(s => s.exams.filter(e => e.teacherId === t.id));
+    const withComp = exams.filter(e => e.comparativeExam && e.comparativeExam.grade);
+    const nums = withComp.map(e => {
+      const o = parseFloat(e.originalExam && e.originalExam.grade);
+      const c = parseFloat(e.comparativeExam && e.comparativeExam.grade);
+      return (!isNaN(o) && !isNaN(c)) ? c - o : null;
+    }).filter(d => d !== null);
+    const avg = nums.length ? (nums.reduce((a,b) => a+b, 0) / nums.length).toFixed(1) : '';
+    return {
+      'מורה':            t.name,
+      'טלפון':           t.phone,
+      'תלמידים':         students.length,
+      'בחינות':          exams.length,
+      'ציוני משווה הוזנו': withComp.length,
+      'ממוצע שיפור':     avg,
+    };
+  });
+
+  if (summary.length) {
+    const ws2 = XLSX.utils.json_to_sheet(summary);
+    ws2['!cols'] = [{wch:16},{wch:14},{wch:10},{wch:10},{wch:18},{wch:14}];
+    ws2['!sheetViews'] = [{ rightToLeft: true }];
+    XLSX.utils.book_append_sheet(wb, ws2, 'סיכום מורים');
+  }
+
+  const today = new Date().toLocaleDateString('he-IL').replace(/\//g,'-');
+  XLSX.writeFile(wb, `ציונים_והתאמות_${today}.xlsx`);
+}
+
+// ============================================================
+// ADMIN — PROGRESS
+// ============================================================
+function renderAdminProgress() {
+  setActiveNav('renderAdminProgress');
+  setContent(`
+    <div class="page-header"><h2>📈 התקדמות כללית</h2><p>סטטוס העלאת מסמכים לכל תלמיד</p></div>
+    <div class="card">
+      <div class="table-wrap"><table>
+        <thead><tr><th>תלמיד</th><th>מורים</th><th>בחינות</th><th>מסמכים הועלו</th><th>התקדמות</th><th>פעולות</th></tr></thead>
+        <tbody>
+          ${db.students.map(s => {
+            const pct = uploadProgress(s);
+            const done = s.exams.filter(e => examHasDocs(e)).length;
+            const teachers = s.teacherIds.map(id => teacherById(id)).filter(Boolean);
+            return `<tr>
+              <td><strong>${s.name}</strong></td>
+              <td>${teachers.map(t=>t.name).join(', ')||'—'}</td>
+              <td>${s.exams.length}</td>
+              <td>${done}/${s.exams.length}</td>
+              <td>
+                <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                <small>${pct}% ${pct === 100 ? '✅' : pct > 50 ? '🔄' : '⚠️'}</small>
+              </td>
+              <td>
+                ${s.parentPhone ? `<a href="${waLink(s.parentPhone,'שלום הורי '+s.name+', עדכון על התקדמות העלאת המסמכים.')}" target="_blank" class="btn btn-sm btn-wa">📱 הורה</a>` : ''}
+                ${teachers.map(t => `<a href="${waLink(t.phone,'שלום '+t.name+', תזכורת להעלאת מסמכים עבור '+s.name+'.')}" target="_blank" class="btn btn-sm btn-wa">📱 ${t.name}</a>`).join('')}
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>
+  `);
+}
+
+// ============================================================
+// TEACHER — DASHBOARD
+// ============================================================
+function renderTeacherDashboard() {
+  setActiveNav('renderTeacherDashboard');
+  const tid = currentUser.id;
+  const students = studentsOfTeacher(tid);
+  const myExams = students.flatMap(s => s.exams.filter(e => e.teacherId === tid));
+  const done = myExams.filter(e => examHasDocs(e)).length;
+  const pct = myExams.length ? Math.round(done/myExams.length*100) : 0;
+
+  // Reminders: pre-exam coming in <=3 days with no docs
+  const reminders = students.flatMap(s =>
+    s.exams.filter(e => e.teacherId === tid && (!examHasDocs(e)) && daysUntil(e.preExamDate) <= 3 && daysUntil(e.preExamDate) > -1)
+      .map(e => ({ ...e, studentName: s.name }))
+  );
+
+  const upcoming = students.flatMap(s =>
+    s.exams.filter(e => e.teacherId === tid && daysUntil(e.examDate) > 0 && daysUntil(e.examDate) <= 14)
+      .map(e => ({ ...e, studentName: s.name, studentId: s.id }))
+  ).sort((a,b) => new Date(a.examDate) - new Date(b.examDate));
+
+  setContent(`
+    <div class="page-header"><h2>שלום, ${currentUser.name} 👋</h2><p>לוח בקרה — מורה</p></div>
+
+    ${reminders.length ? `
+    <div class="reminder-banner">
+      <span>🔔</span>
+      <div><strong>תזכורת: יש להכין מבחן משווה!</strong>
+        ${reminders.map(r => `<br>• ${r.studentName} — ${r.subject} (מועד: ${fmtDate(r.examDate)})`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${students.length}</div><div class="stat-label">התלמידים שלי</div></div>
+      <div class="stat-card"><div class="stat-num">${myExams.length}</div><div class="stat-label">בחינות</div></div>
+      <div class="stat-card"><div class="stat-num">${done}/${myExams.length}</div><div class="stat-label">מסמכים הועלו</div></div>
+      <div class="stat-card"><div class="stat-num">${pct}%</div><div class="stat-label">השלמת מסמכים</div></div>
+    </div>
+
+    ${upcoming.length ? `
+    <div class="card">
+      <div class="card-title">📅 בחינות קרובות (14 יום)</div>
+      ${upcoming.map(e => {
+        const days = daysUntil(e.examDate);
+        const cls = days <= 3 ? 'days-urgent' : days <= 7 ? 'days-soon' : 'days-ok';
+        const hasDocs = examHasDocs(e);
+        return `<div class="exam-item">
+          <div>
+            <strong>${e.studentName}</strong> — ${e.subject}
+            <div class="exam-date">מועד בחינה: ${fmtDate(e.examDate)} | מבחן משווה עד: ${fmtDate(e.preExamDate)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="${cls} exam-days">${days} ימים</span>
+            <span class="badge ${hasDocs ? 'badge-green' : 'badge-red'}">${hasDocs ? '✅ הועלה' : '⚠️ חסר'}</span>
+            ${!hasDocs ? `<button class="btn btn-sm btn-primary" onclick="openUploadDoc('${e.studentId}','${e.id}')">📤 העלה</button>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    <div class="card">
+      <div class="card-title">📊 התקדמות תלמידים</div>
+      ${students.map(s => {
+        const p = uploadProgress(s);
+        return `<div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:14px;">
+            <strong>${s.name}</strong><span>${p}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+  `);
+}
+
+// ============================================================
+// TEACHER — STUDENTS
+// ============================================================
+function renderTeacherStudents() {
+  setActiveNav('renderTeacherStudents');
+  const students = studentsOfTeacher(currentUser.id);
+  setContent(`
+    <div class="page-header"><h2>🧑‍🎓 התלמידים שלי</h2><p>פרטי ההתאמות לכל תלמיד</p></div>
+    ${students.length === 0 ? `<div class="empty-state"><div class="empty-icon">🎓</div><p>אין תלמידים משויכים אליך עדיין</p></div>` :
+      students.map(s => {
+        const pct = uploadProgress(s);
+        const myExams = s.exams.filter(e => e.teacherId === currentUser.id);
+        return `<div class="card">
+          <div class="student-hero">
+            <div class="student-avatar">${s.name.charAt(0)}</div>
+            <div>
+              <div style="font-size:18px;font-weight:800;">${s.name}</div>
+              <div style="font-size:13px;color:var(--muted);">טלפון הורה: ${s.parentPhone||'—'}</div>
+            </div>
+            <div style="margin-right:auto;display:flex;gap:8px;">
+              ${s.parentPhone ? `<a href="${waLink(s.parentPhone,'שלום הורי '+s.name+', הודעה ממורה '+currentUser.name+'.')}" target="_blank" class="btn btn-sm btn-wa">📱 וואצ׳אפ הורה</a>` : ''}
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div class="form-section-title" style="margin-bottom:8px;">ההתאמות של ${s.name}</div>
+            <div class="acc-list">${s.accommodations.map(a => `<span class="acc-tag">✓ ${a}</span>`).join('') || '<span class="badge badge-yellow">אין התאמות רשומות</span>'}</div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <span>התקדמות מסמכים</span><span>${pct}%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div>
+            <div class="form-section-title" style="margin-bottom:8px;">בחינות (${myExams.length})</div>
+            ${myExams.map(e => {
+              const hasDocs = examHasDocs(e);
+              return `<div class="exam-item">
+                <div>
+                  <strong>${e.subject}</strong>
+                  <div class="exam-date">בחינה: ${fmtDate(e.examDate)} | מבחן משווה: ${fmtDate(e.preExamDate)}</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <span class="badge ${hasDocs?'badge-green':'badge-red'}">${hasDocs?'✅ הועלה':'⚠️ חסר'}</span>
+                  <button class="btn btn-sm btn-primary" onclick="openUploadDoc('${s.id}','${e.id}')">📤 ${hasDocs?'עדכן':'העלה'}</button>
+                </div>
+              </div>`;
+            }).join('') || '<p style="color:var(--muted);font-size:13px;">אין בחינות רשומות</p>'}
+          </div>
+        </div>`;
+      }).join('')
+    }
+  `);
+}
+
+// ============================================================
+// TEACHER — EXAMS
+// ============================================================
+function renderTeacherExams() {
+  setActiveNav('renderTeacherExams');
+  const students = studentsOfTeacher(currentUser.id);
+  setContent(`
+    <div class="page-header"><h2>📅 מועדי בחינות</h2><p>ניהול בחינות ותזכורות</p></div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between;">
+        <span>📋 כל הבחינות</span>
+        <button class="btn btn-primary btn-sm" onclick="openAddExam()">+ הוסף בחינה</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>תלמיד</th><th>מקצוע</th><th>תאריך בחינה</th><th>מבחן משווה עד</th><th>ימים לבחינה</th><th>מסמך</th><th>פעולות</th></tr></thead>
+        <tbody>
+          ${students.flatMap(s => s.exams.filter(e => e.teacherId === currentUser.id).map(e => {
+            const days = daysUntil(e.examDate);
+            const cls = days <= 3 ? 'days-urgent' : days <= 7 ? 'days-soon' : 'days-ok';
+            const hasDocs = examHasDocs(e);
+            return `<tr>
+              <td>${s.name}</td>
+              <td>${e.subject}</td>
+              <td>${fmtDate(e.examDate)}</td>
+              <td>${fmtDate(e.preExamDate)}</td>
+              <td class="${cls}"><strong>${days > 0 ? days+' ימים' : 'עבר'}</strong></td>
+              <td><span class="badge ${hasDocs?'badge-green':'badge-red'}">${hasDocs?'✅ הועלה':'⚠️ חסר'}</span></td>
+              <td style="display:flex;gap:6px;">
+                <button class="btn btn-sm btn-primary" onclick="openUploadDoc('${s.id}','${e.id}')">📤 העלה</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteExam('${s.id}','${e.id}')">🗑️</button>
+              </td>
+            </tr>`;
+          })).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);">אין בחינות רשומות</td></tr>'}
+        </tbody>
+      </table></div>
+    </div>
+  `);
+}
+
+function openAddExam() {
+  const students = studentsOfTeacher(currentUser.id);
+  openModal(`
+    <div class="modal-title">הוסף בחינה <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>תלמיד</label>
+      <select class="form-control" id="ae_student">
+        ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>מקצוע</label><input class="form-control" id="ae_subject" placeholder="מתמטיקה, אנגלית..."></div>
+    <div class="form-row">
+      <div class="form-group"><label>תאריך הבחינה</label><input class="form-control" id="ae_date" type="date"></div>
+      <div class="form-group"><label>מבחן משווה עד תאריך</label><input class="form-control" id="ae_pre" type="date"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="addExam()">הוסף בחינה</button>
+  `);
+}
+
+function addExam() {
+  const sid = document.getElementById('ae_student').value;
+  const s = studentById(sid);
+  const exam = {
+    id: uid(),
+    subject: document.getElementById('ae_subject').value.trim(),
+    examDate: document.getElementById('ae_date').value,
+    preExamDate: document.getElementById('ae_pre').value,
+    teacherId: currentUser.id,
+    originalExam: { fileName: null, url: null, grade: '' },
+    comparativeExam: { fileName: null, url: null, grade: '', accommodationsUsed: [] }
+  };
+  if (!exam.subject || !exam.examDate) return alert('מקצוע ותאריך הם שדות חובה');
+  s.exams.push(exam);
+  saveDB(db);
+  closeModal();
+  renderTeacherExams();
+}
+
+function deleteExam(sid, eid) {
+  if (!confirm('למחוק בחינה זו?')) return;
+  const s = studentById(sid);
+  s.exams = s.exams.filter(e => e.id !== eid);
+  saveDB(db);
+  renderTeacherExams();
+}
+
+// ============================================================
+// CLOUDINARY + PDF UTILS
+// ============================================================
+function downloadAsPDF(url, fileName) {
+  if (!url) return alert('אין קובץ להורדה');
+  if (!window.jspdf) { window.open(url, '_blank'); return; }
+  const { jsPDF } = window.jspdf;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const orientation = img.width > img.height ? 'l' : 'p';
+    const pdf = new jsPDF({ orientation, unit: 'px', format: [img.width, img.height] });
+    pdf.addImage(img, 'JPEG', 0, 0, img.width, img.height);
+    pdf.save((fileName || 'מסמך').replace(/\.[^.]+$/, '') + '.pdf');
+  };
+  img.onerror = () => window.open(url, '_blank');
+  img.src = toGrayscaleUrl(url);
+}
+
+// ============================================================
+// TEACHER — DOCS
+// ============================================================
+function renderTeacherDocs() {
+  setActiveNav('renderTeacherDocs');
+  const tid = currentUser.id;
+  const students = studentsOfTeacher(tid);
+  const teacher = teacherById(tid);
+  const templateBlock = (teacher && teacher.templateUrl) ? `
+    <div class="card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #93c5fd;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-weight:700;font-size:15px;margin-bottom:4px;">📋 טופס דיווח — ${teacher.subjects}</div>
+          <div style="font-size:12px;color:var(--muted);">הורד את הטופס, מלא אותו ועלה חזרה כנספח לכל תלמיד</div>
+        </div>
+        <a href="${teacher.templateUrl}" download="${teacher.templateName}" class="btn btn-primary" style="text-decoration:none;">
+          ⬇️ הורד טופס דיווח
+        </a>
+      </div>
+    </div>
+  ` : '';
+  setContent(`
+    <div class="page-header"><h2>📁 מסמכים ונספחים</h2><p>ניהול מבחנים, ציונים ונספחים</p></div>
+    ${templateBlock}
+    ${students.length === 0 ? '<div class="empty-state"><div class="empty-icon">📁</div><p>אין תלמידים</p></div>' :
+      students.map(s => {
+        const myExams = s.exams.filter(e => e.teacherId === tid);
+        const myAppendices = (s.appendices||[]).filter(a => a.teacherId === tid);
+        if (myExams.length === 0 && myAppendices.length === 0) return '';
+        return `<div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div class="card-title" style="margin-bottom:0;">🧑‍🎓 ${s.name} ${s.class?`<span class="badge badge-blue">${s.class}</span>`:''}</div>
+            <button class="btn btn-sm btn-ghost" onclick="openAppendixUpload('${s.id}')">📎 העלה נספח</button>
+          </div>
+
+          ${myAppendices.length ? `<div style="margin-bottom:16px;padding:10px;background:#fefce8;border:1px solid #fde68a;border-radius:10px;">
+            <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px;">📎 נספחים מצורפים</div>
+            ${myAppendices.map(a => `<div class="file-item">
+              <span class="file-name">📎 ${a.fileName} <span style="color:var(--muted)">${a.note?'— '+a.note:''}</span></span>
+              <div style="display:flex;gap:4px;">
+                ${a.url ? `<button class="btn btn-sm btn-ghost" onclick="previewDoc('${s.id}','appendix','${a.id}')">👁️</button>
+                <button class="btn btn-sm btn-ghost" onclick="downloadAsPDF('${a.url}','${a.fileName}')">⬇️ PDF</button>` : ''}
+                <button class="btn btn-sm btn-danger" onclick="removeAppendix('${s.id}','${a.id}')">✕</button>
+              </div>
+            </div>`).join('')}
+          </div>` : ''}
+
+          ${myExams.map(e => {
+            const hasOrig = e.originalExam && e.originalExam.fileName;
+            const hasComp = e.comparativeExam && e.comparativeExam.fileName;
+            const days = daysUntil(e.examDate);
+            const cls = days<=0?'':days<=3?'days-urgent':days<=7?'days-soon':'days-ok';
+            return `<div style="margin-bottom:14px;padding:14px;background:var(--bg);border-radius:12px;border:1px solid var(--border);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <strong style="font-size:15px;">${e.subject}</strong>
+                  <span style="color:var(--muted);font-size:12px;margin-right:8px;">${fmtDate(e.examDate)}</span>
+                  <span class="${cls} exam-days" style="font-size:12px;">${days>0?days+' ימים':days===0?'היום':'עבר'}</span>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <span class="badge ${hasOrig?'badge-green':'badge-yellow'}">מבחן: ${hasOrig?'✅':'—'} ${e.originalExam&&e.originalExam.grade?e.originalExam.grade:'?'}</span>
+                  <span class="badge ${hasComp?'badge-green':'badge-red'}">משווה: ${hasComp?'✅':'⚠️'} ${e.comparativeExam&&e.comparativeExam.grade?e.comparativeExam.grade:'?'}</span>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <!-- מבחן רגיל -->
+                <div style="background:white;border-radius:8px;padding:10px;border:1px solid var(--border);">
+                  <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">📄 מבחן רגיל</div>
+                  ${hasOrig ? `
+                    <div style="font-size:12px;margin-bottom:6px;">📄 ${e.originalExam.fileName}</div>
+                    ${e.originalExam.url ? `<img src="${toGrayscaleUrl(e.originalExam.url)}" style="width:100%;border-radius:6px;margin-bottom:6px;border:1px solid var(--border);">` : ''}
+                    <div style="font-size:12px;font-weight:600;">ציון: ${e.originalExam.grade||'לא הוזן'}</div>
+                    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
+                      ${e.originalExam.url?`<button class="btn btn-sm btn-ghost" onclick="downloadAsPDF('${e.originalExam.url}','${e.originalExam.fileName}')">⬇️ PDF</button>`:''}
+                      <button class="btn btn-sm btn-ghost" onclick="openUploadDoc('${s.id}','${e.id}','original')">✏️ ערוך</button>
+                      <button class="btn btn-sm btn-danger" onclick="clearExamFile('${s.id}','${e.id}','original')">✕</button>
+                    </div>
+                  ` : `<button class="btn btn-sm btn-primary btn-block" onclick="openUploadDoc('${s.id}','${e.id}','original')">📤 העלה מבחן</button>`}
+                </div>
+                <!-- מבחן משווה -->
+                <div style="background:white;border-radius:8px;padding:10px;border:2px solid ${hasComp?'var(--success)':'var(--danger)'};">
+                  <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">📝 מבחן משווה</div>
+                  ${hasComp ? `
+                    <div style="font-size:12px;margin-bottom:6px;">📄 ${e.comparativeExam.fileName}</div>
+                    ${e.comparativeExam.url ? `<img src="${toGrayscaleUrl(e.comparativeExam.url)}" style="width:100%;border-radius:6px;margin-bottom:6px;border:1px solid var(--border);">` : ''}
+                    <div style="font-size:12px;font-weight:600;">ציון: ${e.comparativeExam.grade||'לא הוזן'}</div>
+                    ${e.comparativeExam.accommodationsUsed&&e.comparativeExam.accommodationsUsed.length?`<div style="margin-top:4px;"><div class="acc-list">${e.comparativeExam.accommodationsUsed.map(a=>`<span class="acc-tag" style="font-size:10px;">${a}</span>`).join('')}</div></div>`:''}
+                    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
+                      ${e.comparativeExam.url?`<button class="btn btn-sm btn-ghost" onclick="downloadAsPDF('${e.comparativeExam.url}','${e.comparativeExam.fileName}')">⬇️ PDF</button>`:''}
+                      <button class="btn btn-sm btn-ghost" onclick="openUploadDoc('${s.id}','${e.id}','comparative')">✏️ ערוך</button>
+                      <button class="btn btn-sm btn-danger" onclick="clearExamFile('${s.id}','${e.id}','comparative')">✕</button>
+                    </div>
+                  ` : `<button class="btn btn-sm btn-primary btn-block" onclick="openUploadDoc('${s.id}','${e.id}','comparative')">📤 העלה מבחן משווה</button>`}
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('')
+    }
+  `);
+}
+
+let uploadDocTab = 'original';
+
+function openUploadDoc(sid, eid, tab) {
+  uploadDocTab = tab || 'original';
+  const s = studentById(sid);
+  const e = s.exams.find(ex => ex.id === eid);
+  const isComp = uploadDocTab === 'comparative';
+  const examObj = isComp ? e.comparativeExam : e.originalExam;
+
+  openModal(`
+    <div class="modal-title">📤 ${isComp?'מבחן משווה':'מבחן רגיל'} — ${s.name} / ${e.subject}
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="role-tabs" style="margin-bottom:16px;">
+      <button class="role-tab ${!isComp?'active':''}" onclick="openUploadDoc('${sid}','${eid}','original')">📄 מבחן רגיל</button>
+      <button class="role-tab ${isComp?'active':''}" onclick="openUploadDoc('${sid}','${eid}','comparative')">📝 מבחן משווה</button>
+    </div>
+
+    <div class="upload-zone" onclick="document.getElementById('docFileInput').click()" id="uploadZone">
+      <div class="upload-icon">📷</div>
+      <p>צלם או בחר קובץ</p>
+      <p style="font-size:12px;color:var(--muted);">JPG, PNG — יומר אוטומטית לגרפסקאל כמו סריקה</p>
+      <input type="file" id="docFileInput" accept="image/*" capture="environment"
+        onchange="processAndPreviewDoc(event,'${sid}','${eid}','${uploadDocTab}')">
+    </div>
+
+    <div id="docPreviewWrap" style="margin-top:14px;display:none;">
+      <img id="docPreviewImg" style="width:100%;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-ghost" onclick="downloadAsPDF(document.getElementById('docPreviewImg').src,'מסמך')">⬇️ הורד PDF</button>
+        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('docFileInput').click()">🔄 החלף תמונה</button>
+      </div>
+    </div>
+
+    ${examObj && examObj.fileName ? `<div style="background:var(--accent);padding:8px 12px;border-radius:8px;font-size:13px;margin-top:8px;">קובץ נוכחי: <strong>${examObj.fileName}</strong></div>` : ''}
+
+    <div class="form-group" style="margin-top:14px;">
+      <label>ציון</label>
+      <input class="form-control" id="docGradeInput" type="text" placeholder="למשל: 85, ב+, עבר..."
+        value="${examObj && examObj.grade ? examObj.grade : ''}">
+    </div>
+
+    ${isComp ? `
+    <div class="form-section" style="margin-top:4px;">
+      <div class="form-section-title">התאמות ששומשו במבחן המשווה</div>
+      <div class="checkbox-grid">
+        ${s.accommodations.map(a => `<label class="checkbox-item">
+          <input type="checkbox" name="used_acc" value="${a}"
+            ${(e.comparativeExam.accommodationsUsed||[]).includes(a)?'checked':''}> ${a}
+        </label>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <button class="btn btn-primary btn-block" style="margin-top:16px;"
+      onclick="saveDocData('${sid}','${eid}','${uploadDocTab}')">💾 שמור</button>
+  `);
+
+  // show existing preview if available
+  if (examObj && examObj.url) {
+    setTimeout(() => {
+      const wrap = document.getElementById('docPreviewWrap');
+      const img = document.getElementById('docPreviewImg');
+      if (wrap && img) { img.src = toGrayscaleUrl(examObj.url); wrap.style.display = 'block'; }
+    }, 50);
+  }
+}
+
+async function processAndPreviewDoc(event, sid, eid, tab) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const zone = document.getElementById('uploadZone');
+  if (zone) zone.innerHTML = '<div class="upload-icon">⏳</div><p>מעלה ל-Cloudinary...</p>';
+
+  try {
+    const result = await uploadToCloudinary(file, `accommodations/${sid}`);
+    const wrap = document.getElementById('docPreviewWrap');
+    const img = document.getElementById('docPreviewImg');
+    if (wrap && img) {
+      img.src = toGrayscaleUrl(result.url);
+      wrap.style.display = 'block';
+    }
+    if (zone) zone.style.display = 'none';
+    window._pendingDocUpload = result;
+  } catch(err) {
+    if (zone) zone.innerHTML = '<div class="upload-icon">❌</div><p>שגיאה בהעלאה — נסה שוב</p>';
+    console.error(err);
+  }
+}
+
+function saveDocData(sid, eid, tab) {
+  const s = studentById(sid);
+  const e = s.exams.find(ex => ex.id === eid);
+  const isComp = tab === 'comparative';
+  const examObj = isComp ? e.comparativeExam : e.originalExam;
+
+  if (window._pendingDocUpload) {
+    examObj.url = window._pendingDocUpload.url;
+    examObj.publicId = window._pendingDocUpload.publicId;
+    examObj.fileName = window._pendingDocUpload.fileName;
+    window._pendingDocUpload = null;
+  }
+  examObj.grade = (document.getElementById('docGradeInput') || {}).value || examObj.grade;
+
+  if (isComp) {
+    examObj.accommodationsUsed = [...document.querySelectorAll('input[name="used_acc"]:checked')].map(c => c.value);
+  }
+  saveDB(db);
+  closeModal();
+  renderTeacherDocs();
+}
+
+function clearExamFile(sid, eid, tab) {
+  if (!confirm('למחוק קובץ זה?')) return;
+  const s = studentById(sid);
+  const e = s.exams.find(ex => ex.id === eid);
+  const obj = tab === 'comparative' ? e.comparativeExam : e.originalExam;
+  obj.fileName = null; obj.url = null; obj.publicId = null;
+  saveDB(db);
+  renderTeacherDocs();
+}
+
+function openAppendixUpload(sid) {
+  const s = studentById(sid);
+  const myApp = (s.appendices||[]).filter(a => a.teacherId === currentUser.id);
+  openModal(`
+    <div class="modal-title">📎 נספחים — ${s.name} <button class="modal-close" onclick="closeModal()">✕</button></div>
+
+    <div class="upload-zone" onclick="document.getElementById('appFileInput').click()">
+      <div class="upload-icon">📎</div>
+      <p>צלם או בחר נספח</p>
+      <p style="font-size:12px;color:var(--muted);">יומר לגרפסקאל אוטומטית</p>
+      <input type="file" id="appFileInput" accept="image/*" capture="environment"
+        onchange="processAppendix(event,'${sid}')">
+    </div>
+    <div id="appPreviewWrap" style="margin-top:10px;display:none;">
+      <img id="appPreviewImg" style="width:100%;border-radius:8px;border:1px solid var(--border);">
+    </div>
+    <div class="form-group" style="margin-top:12px;">
+      <label>הערה / נושא הנספח</label>
+      <input class="form-control" id="appNote" placeholder="למשל: פרק 3 — פונקציות...">
+    </div>
+    <button class="btn btn-primary btn-block" style="margin-top:8px;" onclick="saveAppendix('${sid}')">💾 שמור נספח</button>
+
+    ${myApp.length ? `<hr style="margin:16px 0;border:none;border-top:1px solid var(--border);">
+    <div class="form-section-title">נספחים קיימים</div>
+    ${myApp.map(a => `<div class="file-item">
+      <span>📎 ${a.fileName} <span style="color:var(--muted);font-size:12px;">${a.note||''}</span></span>
+      <div style="display:flex;gap:4px;">
+        ${a.url?`<button class="btn btn-sm btn-ghost" onclick="downloadAsPDF('${a.url}','${a.fileName}')">⬇️ PDF</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="removeAppendix('${sid}','${a.id}');closeModal();openAppendixUpload('${sid}')">✕</button>
+      </div>
+    </div>`).join('')}` : ''}
+  `);
+}
+
+async function processAppendix(event, sid) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const wrap = document.getElementById('appPreviewWrap');
+  const img = document.getElementById('appPreviewImg');
+  if (wrap) wrap.innerHTML = '<p style="padding:8px;color:var(--muted);">⏳ מעלה...</p>';
+
+  try {
+    const result = await uploadToCloudinary(file, `accommodations/${sid}/appendices`);
+    window._pendingAppendix = result;
+    if (wrap && img) {
+      wrap.innerHTML = '';
+      wrap.appendChild(img);
+      img.src = toGrayscaleUrl(result.url);
+      wrap.style.display = 'block';
+    }
+  } catch(err) {
+    if (wrap) wrap.innerHTML = '<p style="color:var(--danger);">❌ שגיאה בהעלאה</p>';
+    console.error(err);
+  }
+}
+
+function saveAppendix(sid) {
+  if (!window._pendingAppendix) return alert('יש לבחור קובץ תחילה');
+  const s = studentById(sid);
+  if (!s.appendices) s.appendices = [];
+  s.appendices.push({
+    id: uid(),
+    teacherId: currentUser.id,
+    fileName: window._pendingAppendix.fileName,
+    url: window._pendingAppendix.url,
+    publicId: window._pendingAppendix.publicId,
+    note: (document.getElementById('appNote')||{}).value || ''
+  });
+  window._pendingAppendix = null;
+  saveDB(db);
+  closeModal();
+  renderTeacherDocs();
+}
+
+function removeAppendix(sid, aid) {
+  const s = studentById(sid);
+  s.appendices = (s.appendices||[]).filter(a => a.id !== aid);
+  saveDB(db);
+}
+
+// ============================================================
+// PARENT VIEWS
+// ============================================================
+function renderParentDashboard() {
+  setActiveNav('renderParentDashboard');
+  const s = currentUser;
+  const pct = uploadProgress(s);
+  const teachers = s.teacherIds.map(id => teacherById(id)).filter(Boolean);
+
+  setContent(`
+    <div class="page-header"><h2>שלום, הורי ${s.name} 👋</h2><p>סטטוס ועדכונים</p></div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${s.exams.length}</div><div class="stat-label">בחינות</div></div>
+      <div class="stat-card"><div class="stat-num">${s.exams.filter(e=>e.docs&&e.docs.length>0).length}</div><div class="stat-label">מסמכים הועלו</div></div>
+      <div class="stat-card"><div class="stat-num">${pct}%</div><div class="stat-label">השלמת מסמכים</div></div>
+      <div class="stat-card"><div class="stat-num">${s.accommodations.length}</div><div class="stat-label">סוגי התאמות</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">✨ ההתאמות של ${s.name}</div>
+      <div class="acc-list">${s.accommodations.map(a => `<span class="acc-tag">✓ ${a}</span>`).join('') || '<span style="color:var(--muted)">אין התאמות</span>'}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 התקדמות העלאת מסמכים</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;">
+        <span>${s.exams.filter(e=>e.docs&&e.docs.length>0).length} מתוך ${s.exams.length} הועלו</span>
+        <span>${pct}%</span>
+      </div>
+      <div class="progress-bar" style="height:12px;"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div style="margin-top:16px;">
+        ${s.exams.map(e => {
+          const hasDocs = examHasDocs(e);
+          const t = teacherById(e.teacherId);
+          return `<div class="exam-item">
+            <div>
+              <strong>${e.subject}</strong> ${t ? `<span style="color:var(--muted);font-size:12px;">— ${t.name}</span>` : ''}
+              <div class="exam-date">בחינה: ${fmtDate(e.examDate)}</div>
+            </div>
+            <span class="badge ${hasDocs?'badge-green':'badge-red'}">${hasDocs?'✅ הועלה':'⏳ ממתין'}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👩‍🏫 המורים המלמדים</div>
+      ${teachers.map(t => `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <strong>${t.name}</strong>
+          <div style="font-size:12px;color:var(--muted);">${t.subjects||''} | 📞 ${t.phone}</div>
+        </div>
+        <a href="${waLink(t.phone,'שלום '+t.name+', אני הורה של '+s.name+'.')}" target="_blank" class="btn btn-sm btn-wa">📱 וואצ׳אפ</a>
+      </div>`).join('')}
+    </div>
+  `);
+}
+
+function renderParentExams() {
+  setActiveNav('renderParentExams');
+  const s = currentUser;
+  const sorted = [...s.exams].sort((a,b) => new Date(a.examDate) - new Date(b.examDate));
+
+  setContent(`
+    <div class="page-header"><h2>📅 בחינות קרובות</h2><p>לוח בחינות של ${s.name}</p></div>
+    ${sorted.map(e => {
+      const days = daysUntil(e.examDate);
+      const cls = days <= 3 ? 'days-urgent' : days <= 7 ? 'days-soon' : 'days-ok';
+      const hasDocs = examHasDocs(e);
+      const t = teacherById(e.teacherId);
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:18px;font-weight:800;">${e.subject}</div>
+            ${t ? `<div style="font-size:13px;color:var(--muted);">מורה: ${t.name}</div>` : ''}
+            <div style="font-size:13px;margin-top:8px;">📅 תאריך בחינה: <strong>${fmtDate(e.examDate)}</strong></div>
+            <div style="font-size:13px;">📝 מבחן משווה עד: <strong>${fmtDate(e.preExamDate)}</strong></div>
+          </div>
+          <div style="text-align:left;">
+            <div class="${cls}" style="font-size:24px;font-weight:800;">${days > 0 ? days : '—'}</div>
+            <div style="font-size:12px;color:var(--muted);">ימים</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:10px;">
+          <span class="badge ${hasDocs?'badge-green':'badge-red'}">${hasDocs?'✅ מסמך הועלה':'⚠️ מסמך לא הועלה'}</span>
+          ${!hasDocs && days <= 7 ? `<span class="badge badge-yellow">⏰ נא לפנות למורה</span>` : ''}
+        </div>
+      </div>`;
+    }).join('') || '<div class="empty-state"><div class="empty-icon">📅</div><p>אין בחינות רשומות</p></div>'}
+  `);
+}
+
+function renderParentTeachers() {
+  setActiveNav('renderParentTeachers');
+  const s = currentUser;
+  const teachers = s.teacherIds.map(id => teacherById(id)).filter(Boolean);
+
+  setContent(`
+    <div class="page-header"><h2>👩‍🏫 המורים שלנו</h2><p>פרטי יצירת קשר</p></div>
+    ${teachers.map(t => `<div class="card">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="avatar" style="width:50px;height:50px;font-size:18px;">${t.name.charAt(0)}</div>
+        <div>
+          <div style="font-size:17px;font-weight:800;">${t.name}</div>
+          <div style="font-size:13px;color:var(--muted);">מקצועות: ${t.subjects||'—'}</div>
+          <div style="font-size:13px;color:var(--muted);">📞 ${t.phone}</div>
+        </div>
+        <a href="${waLink(t.phone,'שלום '+t.name+', אני הורה של '+s.name+'. אשמח לדבר בנוגע לבחינות הקרובות.')}" target="_blank" class="btn btn-wa" style="margin-right:auto;">📱 שלח וואצ׳אפ</a>
+      </div>
+    </div>`).join('') || '<div class="empty-state"><div class="empty-icon">👩‍🏫</div><p>אין מורים משויכים</p></div>'}
+  `);
+}
+
+// keyboard enter
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin(); });
+</script>
+</body>
+</html>
