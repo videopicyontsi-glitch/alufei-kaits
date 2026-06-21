@@ -162,11 +162,53 @@
   .student-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
   .student-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 800; }
 
+  /* BOTTOM NAV — mobile only */
+  .bottom-nav { display: none; }
+
   /* RESPONSIVE */
   @media (max-width: 768px) {
     .sidebar { display: none; }
     .form-row { grid-template-columns: 1fr; }
     .stats-grid { grid-template-columns: 1fr 1fr; }
+    .content { padding: 12px; }
+    .card { padding: 14px; }
+    .page-header h2 { font-size: 20px; }
+    .topbar { padding: 0 12px; height: 52px; }
+    .topbar-title { font-size: 14px; }
+    .stat-num { font-size: 28px; }
+    .table-wrap { font-size: 12px; }
+    .main-layout { padding-bottom: 70px; }
+
+    /* bottom nav */
+    .bottom-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0; right: 0; left: 0;
+      background: white;
+      border-top: 1px solid var(--border);
+      z-index: 200;
+      height: 62px;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    }
+    .bottom-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 6px 2px;
+      border: none;
+      background: none;
+      transition: color .15s;
+    }
+    .bottom-nav-item .bn-icon { font-size: 20px; line-height: 1; }
+    .bottom-nav-item.active { color: var(--primary); font-weight: 700; }
+    .bottom-nav-item.active .bn-icon { transform: scale(1.15); }
+    .wa-float { bottom: 74px; }
   }
 
   .section { display: none; }
@@ -225,6 +267,7 @@
     <div class="sidebar" id="sidebar"></div>
     <div class="content" id="mainContent"></div>
   </div>
+  <nav class="bottom-nav" id="bottomNav"></nav>
 </div>
 
 <!-- MODALS -->
@@ -393,12 +436,28 @@ function buildSidebar() {
       <span class="nav-icon">${it.icon}</span>${it.label}
     </div>`
   ).join('');
+  buildBottomNav(items);
 }
 
 function setActiveNav(fn) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const el = document.getElementById('nav_' + fn);
   if (el) el.classList.add('active');
+  // sync bottom nav
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+  const bn = document.getElementById('bn_' + fn);
+  if (bn) bn.classList.add('active');
+}
+
+function buildBottomNav(items) {
+  const nav = document.getElementById('bottomNav');
+  if (!nav) return;
+  nav.innerHTML = items.map(it =>
+    `<button class="bottom-nav-item" onclick="${it.fn}()" id="bn_${it.fn}">
+      <span class="bn-icon">${it.icon}</span>
+      <span>${it.label}</span>
+    </button>`
+  ).join('');
 }
 
 function setContent(html) {
