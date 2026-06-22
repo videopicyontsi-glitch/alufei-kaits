@@ -18,7 +18,9 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const bcrypt = require('bcryptjs');
 const XLSX = require('xlsx');
 
-const db = new Database(path.join(__dirname, 'pinkus.db'));
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+const db = new Database(path.join(DATA_DIR, 'pinkus.db'));
 db.pragma('journal_mode = WAL');
 
 db.exec(`
@@ -266,7 +268,7 @@ if (!db.prepare("SELECT 1 FROM users WHERE role='mefakatz' LIMIT 1").get()) {
 }
 
 app.use(session({
-  store: new SQLiteStore({ db: 'pinkus-sessions.db', dir: __dirname }),
+  store: new SQLiteStore({ db: 'pinkus-sessions.db', dir: DATA_DIR }),
   secret: process.env.SESSION_SECRET || 'pinkus_secret_2024',
   resave: false,
   saveUninitialized: false,
