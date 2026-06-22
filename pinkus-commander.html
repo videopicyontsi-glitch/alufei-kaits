@@ -296,8 +296,9 @@ function renderOverview(){
   // Team tabs
   const teamNames=[...new Set(d.cadets.map(c=>c.team_name||'ללא צוות'))].sort();
   $('ov-team-tabs').innerHTML=
-    `<button class="team-tab ${OV_TEAM==='all'?'on':''}" onclick="setOvTeam('all')">כל הקורס</button>`+
-    teamNames.map(t=>`<button class="team-tab ${OV_TEAM===t?'on':''}" onclick="setOvTeam('${t.replace(/'/g,"\\'")}')">${esc(t)}</button>`).join('');
+    `<button class="team-tab ${OV_TEAM==='all'?'on':''}" data-t="all">כל הקורס</button>`+
+    teamNames.map(t=>`<button class="team-tab ${OV_TEAM===t?'on':''}" data-t="${esc(t)}">${esc(t)}</button>`).join('');
+  $('ov-team-tabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setOvTeam(b.dataset.t)));
 
   // Body
   const teamsToShow=OV_TEAM==='all'?teamNames:[OV_TEAM];
@@ -310,7 +311,7 @@ function renderOverview(){
     const tpass=tscored.filter(c=>c.mef_score>=6).length;
     const tnoScore=tcads.filter(c=>c.mef_score==null).length;
 
-    if(OV_TEAM==='all') bodyHtml+=`<div class="sec-title" style="cursor:pointer" onclick="setOvTeam('${tName.replace(/'/g,"\\'")}')">${esc(tName)} ›</div>`;
+    if(OV_TEAM==='all') bodyHtml+=`<div class="sec-title" style="cursor:pointer" data-t="${esc(tName)}">${esc(tName)} ›</div>`;
 
     // Team stats strip
     bodyHtml+=`<div class="card team-stats-card" style="padding:12px 14px;margin-bottom:10px">
@@ -354,6 +355,7 @@ function renderOverview(){
     }
   });
   $('ov-team-body').innerHTML=bodyHtml;
+  $('ov-team-body').querySelectorAll('.sec-title[data-t]').forEach(el=>el.addEventListener('click',()=>setOvTeam(el.dataset.t)));
 
   // Recommendations
   renderRecs(d);
