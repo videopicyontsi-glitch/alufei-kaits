@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a5f3d">
+<title>פנקס מפק״ץ — מפקד הקורס</title>
+<style>
+  :root{--green:#0f9d63;--green-d:#0c7a4e;--green-dd:#0a5f3d;--navy:#16223a;--bg:#f3f5f8;--card:#ffffff;--ink:#141b27;--muted:#71798a;--line:#eceff3;--pass:#0f9d63;--fail:#e0533d;--accent:#19b67e;--shadow:0 2px 8px rgba(20,40,30,.05),0 8px 24px rgba(20,40,30,.05);--shadow-lg:0 6px 18px rgba(20,40,30,.08),0 20px 48px rgba(20,40,30,.10);--r:18px;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Hebrew",sans-serif;background:linear-gradient(180deg,#f6f8fa,#eef2f6 60%);background-attachment:fixed;color:var(--ink);line-height:1.55;font-size:15px;padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+  h1,h2,h3,h4{margin:0 0 .4em}
+  header{position:sticky;top:0;z-index:50;color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 14px;background:linear-gradient(135deg,var(--green-dd),var(--green) 90%);box-shadow:0 6px 20px rgba(12,90,60,.22);border-radius:0 0 22px 22px}
+  .hd{display:flex;align-items:center;gap:12px;justify-content:space-between}
+  .hd .t b{font-size:18px;font-weight:800;display:block}
+  .hd .t span{font-size:11.5px;opacity:.9}
+  .logout{background:rgba(255,255,255,.2);border:none;color:#fff;padding:9px 14px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer}
+  main{padding:16px 14px 0;max-width:820px;margin:0 auto}
+  .view{display:none;animation:fade .25s}.view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .card h3{font-size:15.5px;font-weight:700}
+  .muted{color:var(--muted);font-size:13px}
+  .sec-title{font-size:12px;font-weight:800;color:var(--green-d);margin:18px 6px 8px;text-transform:uppercase;letter-spacing:.6px}
+  button{font-family:inherit;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:none;background:linear-gradient(135deg,var(--green-d),var(--green));color:#fff;padding:11px 17px;border-radius:14px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(15,157,99,.25);transition:transform .12s}
+  .btn:active{transform:scale(.97)}
+  .btn.sec{background:#e9f5ef;color:var(--green-d);border:1px solid #cfeadd;box-shadow:none}
+  .btn.gray{background:#eef1f5;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+  .btn.sm{padding:8px 13px;font-size:12.5px;border-radius:11px}
+  .btn.block{width:100%;justify-content:center}
+  .btn.danger{background:#fdeeeb;color:var(--fail);border:1px solid #f6d2cb;box-shadow:none}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .spread{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  input,textarea,select{font-family:inherit;font-size:14px;width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fafbfc;color:var(--ink)}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(15,157,99,.13)}
+  textarea{resize:vertical;min-height:60px}
+  label.fld{display:block;margin:11px 0 5px;font-size:12px;font-weight:700;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:right;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:12px;color:var(--muted);font-weight:700}
+  td input{padding:7px 8px}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .b-cmd{background:#e7eefc;color:#2b54c6}.b-mef{background:#e7f6ee;color:var(--green-d)}.b-tz{background:#fdf0e3;color:#c47a1e}.b-team{background:#f0eafd;color:#6b3cbf}
+  .toggle{width:42px;height:24px;border-radius:14px;background:#d4dae1;border:none;position:relative;cursor:pointer;transition:.18s;flex:0 0 auto}
+  .toggle.on{background:var(--green)}
+  .toggle::after{content:"";position:absolute;top:3px;right:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.18s}
+  .toggle.on::after{right:21px}
+  .mef-card .cad{padding:9px 4px;border-bottom:1px solid var(--line);font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .mef-card .cad:last-child{border-bottom:none}
+  .score-pill{font-size:12px;font-weight:800;padding:3px 9px;border-radius:20px;min-width:36px;text-align:center}
+  .score-hi{background:#e7f6ee;color:var(--green-d)}.score-mid{background:#fdf0e3;color:#c47a1e}.score-lo{background:#fdeeeb;color:var(--fail)}.score-none{background:#eef1f5;color:var(--muted)}
+  nav.tab{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;gap:2px;padding:8px 6px max(env(safe-area-inset-bottom),8px);background:rgba(255,255,255,.85);backdrop-filter:blur(16px);border-top:1px solid rgba(0,0,0,.05);box-shadow:0 -6px 20px rgba(20,40,30,.06)}
+  nav.tab button{flex:1;background:none;border:none;padding:8px 1px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:10px;font-weight:700;min-height:52px;border-radius:12px}
+  nav.tab button.on{color:var(--green-d);background:#e9f6ef}
+  nav.tab svg{width:22px;height:22px}
+  .modal{position:fixed;inset:0;z-index:100;background:rgba(15,25,20,.5);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center}
+  .modal.on{display:flex;animation:fade .2s}
+  .sheet{background:var(--bg);width:100%;max-width:820px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg)}
+  .sheet .grip{width:42px;height:5px;background:#d4dae1;border-radius:3px;margin:8px auto}
+  .sheet-h{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:2}
+  .x{background:#fff;border:1px solid var(--line);border-radius:50%;width:34px;height:34px;font-size:20px;color:var(--muted);cursor:pointer;border:none;display:grid;place-items:center}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:70px;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:12.5px;font-weight:700;color:var(--muted)}
+  .seg button.on{background:linear-gradient(135deg,var(--green-d),var(--green));border-color:var(--green);color:#fff}
+  .chkfield{display:flex;align-items:center;gap:8px;padding:7px 4px;font-size:13.5px}
+  .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:14px;font-weight:700;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:200}
+  .toast.on{opacity:1}
+  .stars{display:flex;gap:3px;direction:ltr}
+  .stars span{font-size:18px;cursor:pointer;opacity:.35;transition:.1s}
+  .stars span.on{opacity:1}
+  .team-row{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line)}
+  .team-row:last-child{border-bottom:none}
+  /* KPI */
+  .kpi-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 10px;text-align:center;flex:1;min-width:60px;box-shadow:var(--shadow)}
+  .kpi-n{font-size:22px;font-weight:800;color:var(--green-d);line-height:1.1}
+  .kpi-l{font-size:11px;color:var(--muted);margin-top:3px;font-weight:600}
+  /* Team tabs */
+  .team-tab{background:#fff;border:1.5px solid var(--line);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:.15s;white-space:nowrap}
+  .team-tab.on{background:linear-gradient(135deg,var(--green-d),var(--green));border-color:var(--green);color:#fff;box-shadow:0 3px 10px rgba(15,157,99,.25)}
+  /* Team stats */
+  .team-stats-row{display:flex;gap:4px;justify-content:space-around}
+  .ts-cell{text-align:center;flex:1}
+  .ts-cell b{font-size:18px;font-weight:800;display:block}
+  .ts-cell .muted{font-size:11px}
+  /* Cadet rows */
+  .cad-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--line);gap:8px;cursor:pointer;transition:background .1s}
+  .cad-row:hover{background:#f6faf8}
+  .cad-name{font-size:13.5px;font-weight:600;flex:0 0 auto;min-width:80px}
+  .cad-scores{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;flex-wrap:nowrap}
+  .score-label{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .sb-wrap{width:52px;height:7px;background:#eef1f5;border-radius:4px;overflow:hidden;flex:0 0 auto}
+  .sb-fill{height:100%;border-radius:4px;transition:width .3s}
+  .sb-hi{background:var(--green)}.sb-mid{background:#f5a623}.sb-lo{background:var(--fail)}
+  .sb-val{font-size:12px;font-weight:800;min-width:18px;text-align:center}
+  /* Rec cards */
+  .rec-card{min-width:140px}
+</style>
+</head>
+<body>
+<header><div class="hd"><div class="t"><b>מפקד הקורס</b><span id="hd-name">—</span></div><button class="logout" onclick="logout()">יציאה</button></div></header>
+<main>
+  <!-- OVERVIEW -->
+  <section class="view active" id="v-overview">
+    <!-- Course-wide KPI bar -->
+    <div class="row" style="margin-bottom:10px;gap:8px" id="ov-kpis"></div>
+    <!-- Team tabs -->
+    <div id="ov-team-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <!-- Team stats + cadets -->
+    <div id="ov-team-body"></div>
+    <!-- Recommendations -->
+    <div id="ov-recs"></div>
+  </section>
+
+  <!-- GRADES -->
+  <section class="view" id="v-grades">
+    <div class="row" style="margin-bottom:12px">
+      <input id="gr-search" placeholder="חיפוש צוער..." oninput="filterGrades()" style="flex:1;min-width:0">
+      <button class="btn sm gray" onclick="openExport()">ייצוא אקסל</button>
+    </div>
+    <div class="card" style="padding:4px 0;overflow:auto"><table id="gr-tbl"></table></div>
+  </section>
+
+  <!-- USERS -->
+  <section class="view" id="v-users">
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn sm" onclick="openUser()">+ הוסף משתמש</button>
+      <button class="btn sm sec" onclick="openM('m-import')">ייבוא מאקסל</button>
+    </div>
+    <div class="card" style="padding:6px 0;overflow:auto"><table id="users-tbl"></table></div>
+  </section>
+
+  <!-- TEAMS -->
+  <section class="view" id="v-teams">
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn sm" onclick="openTeam()">+ צוות חדש</button>
+    </div>
+    <div id="teams-list"></div>
+  </section>
+
+  <!-- ANNOUNCE -->
+  <section class="view" id="v-announce">
+    <div class="card">
+      <h3>שליחת הודעה</h3>
+      <label class="fld">סוג</label>
+      <div class="seg" id="an-type" style="flex-wrap:wrap">
+        <button class="on" data-v="message" onclick="anType('message')">הודעה</button>
+        <button data-v="survey" onclick="anType('survey')">סקר</button>
+        <button data-v="link" onclick="anType('link')">קישור</button>
+        <button data-v="popup" onclick="anType('popup')">פופאפ</button>
+      </div>
+      <label class="fld">יעד</label>
+      <select id="an-scope" onchange="anScope()">
+        <option value="all_cadets">כל הצוערים</option>
+        <option value="all_mefakatzim">כל המפקצים</option>
+        <option value="team_cadets">צוות — צוערים</option>
+        <option value="team_mefakatzim">צוות — מפקצים</option>
+        <option value="mefakatz_cadets">קבוצת מפקץ</option>
+        <option value="personal">אדם ספציפי</option>
+      </select>
+      <div id="an-team-wrap" style="display:none"><label class="fld">צוות</label><select id="an-team"></select></div>
+      <div id="an-mef-wrap" style="display:none"><label class="fld">מפקץ</label><select id="an-mef"></select></div>
+      <div id="an-cad-wrap" style="display:none"><label class="fld">אדם</label><select id="an-cad"></select></div>
+      <label class="fld">כותרת</label><input id="an-title">
+      <label class="fld">תוכן</label><textarea id="an-content"></textarea>
+      <div id="an-link-wrap" style="display:none"><label class="fld">כתובת קישור</label><input id="an-link" placeholder="https://..."></div>
+      <div id="an-popup-wrap" style="display:none">
+        <label class="fld">תמונה לפופאפ (אופציונלי)</label>
+        <input type="file" id="an-img-file" accept="image/*" onchange="uploadPopupImg(this)">
+        <div id="an-img-preview" style="margin-top:8px"></div>
+        <input type="hidden" id="an-img-url">
+      </div>
+      <div id="an-opts-wrap" style="display:none"><label class="fld">אפשרויות סקר</label><div id="an-opts"></div><button class="btn sm sec" onclick="addOpt()">+ אפשרות</button></div>
+      <button class="btn block" style="margin-top:16px" onclick="sendAnnounce()">שלח</button>
+    </div>
+    <div class="sec-title">הודעות שנשלחו</div>
+    <div id="an-sent"></div>
+  </section>
+</main>
+
+<nav class="tab">
+  <button class="on" data-go="overview" onclick="go('overview')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h8V3H3zM13 21h8V3h-8zM3 21h8v-6H3z"/></svg>סקירה</button>
+  <button data-go="grades" onclick="go('grades')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>ציונים</button>
+  <button data-go="users" onclick="go('users')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>משתמשים</button>
+  <button data-go="teams" onclick="go('teams')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M2 20h4M18 20h4"/></svg>צוותים</button>
+  <button data-go="announce" onclick="go('announce')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8v18l-18-8z"/></svg>הודעות</button>
+</nav>
+
+<!-- USER MODAL -->
+<div class="modal" id="m-user"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3 id="mu-title">הוסף משתמש</h3><button class="x" onclick="closeM('m-user')">×</button></div>
+  <input type="hidden" id="mu-id">
+  <label class="fld">שם מלא</label><input id="mu-name">
+  <label class="fld">תפקיד</label>
+  <select id="mu-role" onchange="muRole()">
+    <option value="mefakatz">מפקץ</option>
+    <option value="tzaer">צוער</option>
+    <option value="commander">מפקד</option>
+  </select>
+  <div id="mu-team-wrap"><label class="fld">צוות</label><select id="mu-team"><option value="">— ללא צוות —</option></select></div>
+  <div id="mu-mef-wrap" style="display:none"><label class="fld">מפקץ</label><select id="mu-mef"><option value="">— ללא —</option></select></div>
+  <label class="fld">שם משתמש</label><input id="mu-user">
+  <label class="fld" id="mu-pass-lbl">סיסמה</label><input id="mu-pass" type="text">
+  <button class="btn block" style="margin-top:18px" onclick="saveUser()">שמור</button>
+</div></div>
+
+<!-- IMPORT MODAL -->
+<div class="modal" id="m-import"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3>ייבוא מאקסל</h3><button class="x" onclick="closeM('m-import')">×</button></div>
+  <div class="card muted" style="font-size:13px">עמודות נדרשות:<br><b>full_name, username, password, role</b> (מפקץ/צוער)<br><b>mefakatz_username</b> (לצוערים בלבד)</div>
+  <input type="file" id="imp-file" accept=".xlsx,.xls" style="margin-top:12px">
+  <button class="btn block" style="margin-top:14px" onclick="doImport()">ייבא</button>
+  <div id="imp-res"></div>
+</div></div>
+
+<!-- EXPORT MODAL -->
+<div class="modal" id="m-export"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3>ייצוא לאקסל</h3><button class="x" onclick="closeM('m-export')">×</button></div>
+  <div class="card" id="exp-fields"></div>
+  <button class="btn block" onclick="doExport()">הורד קובץ</button>
+</div></div>
+
+<!-- TEAM MODAL -->
+<div class="modal" id="m-team"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3 id="mt-title">צוות חדש</h3><button class="x" onclick="closeM('m-team')">×</button></div>
+  <input type="hidden" id="mt-id">
+  <label class="fld">שם הצוות</label><input id="mt-name">
+  <div class="sec-title" style="margin-top:14px">סגל הצוות</div>
+  <div id="mt-staff"></div>
+  <button class="btn sec block" style="margin-top:8px" onclick="addStaffRow()">+ הוסף תפקיד</button>
+  <button class="btn block" style="margin-top:14px" onclick="saveTeam()">שמור</button>
+</div></div>
+
+<!-- CADET GRADE MODAL -->
+<div class="modal" id="m-cgrade"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3 id="mcg-name">ציון צוער</h3><button class="x" onclick="closeM('m-cgrade')">×</button></div>
+  <input type="hidden" id="mcg-id">
+  <label class="fld">ציון (1–10)</label>
+  <div class="stars" id="mcg-stars"></div>
+  <label class="fld">הערות</label><textarea id="mcg-notes"></textarea>
+  <button class="btn block" style="margin-top:14px" onclick="saveCGrade()">שמור</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<script>
+let ME=null,USERS=[],MEFS=[],TEAMS=[],GRADES=[],anTypeV='message';
+const EXP_FIELDS={full_name:'שם מלא',username:'שם משתמש',mefakatz_name:'מפקץ',team_name:'צוות',age:'גיל',marital_status:'מצב משפחתי',city:'עיר',address:'כתובת',phone:'טלפון',spouse_phone:'טלפון בן/בת זוג',parents_phone:'טלפון הורים',num_children:'מספר ילדים',civilian_profession:'מקצוע אזרחי',shirt_size:'מידת חולצה',notes:'הערות'};
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function openM(id){$(id).classList.add('on');document.body.style.overflow='hidden';}
+function closeM(id){$(id).classList.remove('on');document.body.style.overflow='';}
+let tT;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),1800);}
+async function api(url,opts){const r=await fetch(url,opts);if(r.status===401){location.href='/pinkus';throw 0;}return r;}
+function go(t){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$('v-'+t).classList.add('active');document.querySelectorAll('nav.tab button').forEach(b=>b.classList.toggle('on',b.dataset.go===t));
+  if(t==='overview')loadOverview();if(t==='grades')loadGrades();if(t==='users')loadUsers();if(t==='teams')loadTeams();if(t==='announce')loadAnnounce();}
+async function logout(){await fetch('/api/pinkus/logout',{method:'POST'});location.href='/pinkus';}
+
+function roleBadge(r){return r==='commander'?'<span class="badge b-cmd">מפקד</span>':r==='mefakatz'?'<span class="badge b-mef">מפקץ</span>':'<span class="badge b-tz">צוער</span>';}
+function scorePill(v){if(v==null||v==='')return '<span class="score-pill score-none">—</span>';const n=Number(v);const cls=n>=8?'score-hi':n>=5?'score-mid':'score-lo';return `<span class="score-pill ${cls}">${n}</span>`;}
+
+/* ===== OVERVIEW ===== */
+let OV_DATA=null, OV_TEAM='all';
+
+function avg(arr){const a=arr.filter(x=>x!=null&&x!=='');return a.length?Math.round(a.reduce((s,x)=>s+Number(x),0)/a.length*10)/10:null;}
+function pct(n,d){return d?Math.round(n/d*100):0;}
+
+function scoreBar(v,max=10){
+  if(v==null)return '<div class="sb-wrap"><div class="sb-fill" style="width:0"></div></div><span class="sb-val muted">—</span>';
+  const p=Math.round((v/max)*100);const cls=v>=7?'hi':v>=5?'mid':'lo';
+  return `<div class="sb-wrap"><div class="sb-fill sb-${cls}" style="width:${p}%"></div></div><span class="sb-val">${v}</span>`;}
+
+async function loadOverview(){
+  const r=await api('/api/pinkus/commander/overview');OV_DATA=await r.json();
+  renderOverview();
+}
+
+function renderOverview(){
+  const d=OV_DATA;
+  const scored=d.cadets.filter(c=>c.mef_score!=null);
+  const avgAll=avg(d.cadets.map(c=>c.mef_score));
+  const passAll=scored.filter(c=>c.mef_score>=6).length;
+
+  // KPI bar
+  $('ov-kpis').innerHTML=`
+    <div class="kpi-card"><div class="kpi-n">${d.cadets.length}</div><div class="kpi-l">צוערים</div></div>
+    <div class="kpi-card"><div class="kpi-n">${d.mefakatzim.length}</div><div class="kpi-l">מפקצ״ים</div></div>
+    <div class="kpi-card"><div class="kpi-n" style="color:${avgAll>=7?'var(--pass)':avgAll>=5?'#c47a1e':'var(--fail)'}">${avgAll??'—'}</div><div class="kpi-l">ממוצע ציון</div></div>
+    <div class="kpi-card"><div class="kpi-n">${scored.length?pct(passAll,scored.length)+'%':'—'}</div><div class="kpi-l">עוברים (6+)</div></div>`;
+
+  // Team tabs
+  const teamNames=[...new Set(d.cadets.map(c=>c.team_name||'ללא צוות'))].sort();
+  $('ov-team-tabs').innerHTML=
+    `<button class="team-tab ${OV_TEAM==='all'?'on':''}" onclick="setOvTeam('all')">כל הקורס</button>`+
+    teamNames.map(t=>`<button class="team-tab ${OV_TEAM===t?'on':''}" onclick="setOvTeam('${t.replace(/'/g,"\\'")}')">${esc(t)}</button>`).join('');
+
+  // Body
+  const teamsToShow=OV_TEAM==='all'?teamNames:[OV_TEAM];
+  let bodyHtml='';
+  teamsToShow.forEach(tName=>{
+    const tcads=d.cadets.filter(c=>(c.team_name||'ללא צוות')===tName);
+    const tmefs=d.mefakatzim.filter(m=>(m.team_name||'ללא צוות')===tName);
+    const tscored=tcads.filter(c=>c.mef_score!=null);
+    const tavg=avg(tcads.map(c=>c.mef_score));
+    const tpass=tscored.filter(c=>c.mef_score>=6).length;
+    const tnoScore=tcads.filter(c=>c.mef_score==null).length;
+
+    if(OV_TEAM==='all') bodyHtml+=`<div class="sec-title" style="cursor:pointer" onclick="setOvTeam('${tName.replace(/'/g,"\\'")}')">${esc(tName)} ›</div>`;
+
+    // Team stats strip
+    bodyHtml+=`<div class="card team-stats-card" style="padding:12px 14px;margin-bottom:10px">
+      <div class="team-stats-row">
+        <div class="ts-cell"><b>${tcads.length}</b><div class="muted">צוערים</div></div>
+        <div class="ts-cell"><b>${tmefs.length}</b><div class="muted">מפקצ״ים</div></div>
+        <div class="ts-cell"><b style="color:${tavg>=7?'var(--pass)':tavg>=5?'#c47a1e':'var(--fail)'}">${tavg??'—'}</b><div class="muted">ממוצע</div></div>
+        <div class="ts-cell"><b>${tscored.length?pct(tpass,tscored.length)+'%':'—'}</b><div class="muted">עוברים</div></div>
+        <div class="ts-cell"><b style="color:${tnoScore>0?'var(--fail)':'var(--pass)'}">${tnoScore}</b><div class="muted">ללא ציון</div></div>
+      </div>
+    </div>`;
+
+    // Mefakatzim + cadets
+    tmefs.forEach(m=>{
+      const mcads=tcads.filter(c=>c.mefakatz_id===m.id);
+      const mavg=avg(mcads.map(c=>c.mef_score));
+      bodyHtml+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:10px">
+        <div style="background:linear-gradient(135deg,var(--green-dd),var(--green-d));color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+          <div><b style="font-size:14px">${esc(m.full_name)}</b><span style="opacity:.75;font-size:12px;margin-right:8px">${mcads.length} צוערים</span></div>
+          <span style="background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;font-size:13px;font-weight:800">${mavg!=null?'ממוצע '+mavg:'אין ציונים'}</span>
+        </div>
+        ${mcads.length?mcads.map(c=>`
+          <div class="cad-row" onclick="openCGrade(${c.id},'${esc(c.full_name)}',${c.cmd_score??'null'},'${esc(c.cmd_notes||'')}')">
+            <div class="cad-name">${esc(c.full_name)}</div>
+            <div class="cad-scores">
+              <div class="score-label">מפקץ</div>${scoreBar(c.mef_score)}
+              <div class="score-label" style="margin-right:10px">מפקד</div>${scoreBar(c.cmd_score)}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--muted);flex:0 0 auto"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+          </div>`).join(''):'<div class="muted" style="padding:12px 14px;font-size:13px">אין צוערים</div>'}
+      </div>`;
+    });
+
+    // Cadets with no mefakatz in this team
+    const unassigned=tcads.filter(c=>!c.mefakatz_id);
+    if(unassigned.length){
+      bodyHtml+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:10px">
+        <div style="background:#d4dae1;color:var(--ink);padding:10px 14px"><b style="font-size:14px">ללא מפקץ</b></div>
+        ${unassigned.map(c=>`<div class="cad-row"><div class="cad-name">${esc(c.full_name)}</div></div>`).join('')}
+      </div>`;
+    }
+  });
+  $('ov-team-body').innerHTML=bodyHtml;
+
+  // Recommendations
+  renderRecs(d);
+}
+
+function setOvTeam(t){OV_TEAM=t;renderOverview();}
+
+function renderRecs(d){
+  const scored=d.cadets.filter(c=>c.mef_score!=null).sort((a,b)=>b.mef_score-a.mef_score);
+  const top3=scored.slice(0,3);
+  const bot3=scored.filter(c=>c.mef_score<6).slice(-3).reverse();
+  const noScore=d.cadets.filter(c=>c.mef_score==null);
+  const noCmdGrade=d.cadets.filter(c=>c.cmd_score==null);
+
+  let actions=[];
+  if(noScore.length) actions.push({icon:'⚠️',txt:`${noScore.length} צוערים עדיין ללא ציון מפקץ — מומלץ לוודא שכל המפקצ״ים השלימו דירוג`});
+  if(noCmdGrade.length) actions.push({icon:'📝',txt:`${noCmdGrade.length} צוערים ללא ציון מפקד קורס — ניתן לדרג ישירות מטאב ציונים`});
+  const teamScores={};
+  d.cadets.forEach(c=>{const t=c.team_name||'ללא';if(!teamScores[t])teamScores[t]=[];if(c.mef_score!=null)teamScores[t].push(c.mef_score);});
+  const teamAvgs=Object.entries(teamScores).map(([t,sc])=>({t,a:avg(sc)})).filter(x=>x.a!=null).sort((a,b)=>a.a-b.a);
+  if(teamAvgs.length>=2&&teamAvgs[0].a<6) actions.push({icon:'🔴',txt:`צוות ${teamAvgs[0].t} עם הממוצע הנמוך ביותר (${teamAvgs[0].a}) — מומלץ שיחה עם מפקץ הצוות`});
+
+  $('ov-recs').innerHTML=`
+    <div class="sec-title" style="margin-top:20px">המלצות ותובנות</div>
+    <div class="row" style="gap:8px;align-items:stretch;margin-bottom:12px">
+      ${top3.length?`<div class="card rec-card" style="flex:1;margin:0">
+        <div style="font-size:12px;font-weight:800;color:var(--green-d);margin-bottom:8px">🏆 מצטיינים</div>
+        ${top3.map((c,i)=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
+          <span>${['🥇','🥈','🥉'][i]} ${esc(c.full_name)}</span><b style="color:var(--green-d)">${c.mef_score}</b></div>`).join('')}
+      </div>`:''}
+      ${bot3.length?`<div class="card rec-card" style="flex:1;margin:0">
+        <div style="font-size:12px;font-weight:800;color:var(--fail);margin-bottom:8px">📉 דורשים תשומת לב</div>
+        ${bot3.map(c=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
+          <span>${esc(c.full_name)}</span><b style="color:var(--fail)">${c.mef_score}</b></div>`).join('')}
+      </div>`:''}
+    </div>
+    ${actions.length?`<div class="card" style="padding:12px 14px">
+      ${actions.map(a=>`<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px"><span style="flex:0 0 auto">${a.icon}</span><span>${a.txt}</span></div>`).join('')}
+    </div>`:'<div class="card muted" style="text-align:center">✅ הכל נראה תקין — אין פעולות דחופות</div>'}`;
+
+/* ===== GRADES ===== */
+async function loadGrades(){
+  const r=await api('/api/pinkus/commander/cadets-grades');GRADES=await r.json();renderGrades();}
+function filterGrades(){const q=$('gr-search').value.trim().toLowerCase();renderGrades(q);}
+function renderGrades(q=''){
+  const rows=q?GRADES.filter(g=>g.full_name.toLowerCase().includes(q)||( g.mefakatz_name||'').toLowerCase().includes(q)):GRADES;
+  $('gr-tbl').innerHTML=`<tr><th>שם</th><th>מפקץ</th><th>צוות</th><th>דירוג מפקץ</th><th>ציון מפקד</th><th></th></tr>`+
+    rows.map(g=>`<tr>
+      <td><b>${esc(g.full_name)}</b></td>
+      <td>${esc(g.mefakatz_name||'—')}</td>
+      <td>${g.team_name?`<span class="badge b-team">${esc(g.team_name)}</span>`:'—'}</td>
+      <td>${scorePill(g.mef_score)}</td>
+      <td>${scorePill(g.cmd_score)}</td>
+      <td><button class="btn sm gray" onclick="openCGrade(${g.id},'${esc(g.full_name)}',${g.cmd_score??'null'},'${esc(g.cmd_notes||'')}')">✎</button></td></tr>`).join('');
+}
+function openCGrade(id,name,score,notes){$('mcg-id').value=id;$('mcg-name').textContent=name;$('mcg-notes').value=notes==='null'?'':notes;
+  const stars=$('mcg-stars');stars.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(i=>`<span onclick="setStars(${i})" data-v="${i}">${i<=score?'★':'☆'}</span>`).join('');
+  stars.dataset.val=score||0;openM('m-cgrade');}
+function setStars(v){$('mcg-stars').dataset.val=v;[...$('mcg-stars').querySelectorAll('span')].forEach(s=>s.textContent=Number(s.dataset.v)<=v?'★':'☆');}
+async function saveCGrade(){const id=$('mcg-id').value;const score=$('mcg-stars').dataset.val;const notes=$('mcg-notes').value;
+  await api('/api/pinkus/commander/cadets/'+id+'/grade',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({score:score||null,notes})});
+  closeM('m-cgrade');loadGrades();toast('נשמר ✓');}
+
+/* ===== USERS ===== */
+async function loadUsers(){
+  const r=await api('/api/pinkus/users');USERS=await r.json();
+  const r2=await api('/api/pinkus/mefakatzim');MEFS=await r2.json();
+  const r3=await api('/api/pinkus/teams');TEAMS=await r3.json();
+  $('users-tbl').innerHTML=`<tr><th>שם</th><th>תפקיד</th><th>צוות/מפקץ</th><th>פעיל</th><th></th></tr>`+
+    USERS.map(u=>`<tr>
+      <td><b>${esc(u.full_name)}</b><br><span class="muted">${esc(u.username)}</span></td>
+      <td>${roleBadge(u.role)}</td>
+      <td>${u.role==='mefakatz'&&u.team_name?`<span class="badge b-team">${esc(u.team_name)}</span>`:esc(u.mefakatz_name||'—')}</td>
+      <td><button class="toggle ${u.active?'on':''}" onclick="toggleActive(${u.id},${u.active?0:1})"></button></td>
+      <td><div class="row"><button class="btn sm gray" onclick="openUser(${u.id})">✎</button><button class="btn sm danger" onclick="delUser(${u.id})">🗑</button></div></td></tr>`).join('');
+}
+async function toggleActive(id,active){await api('/api/pinkus/users/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({active})});loadUsers();}
+async function delUser(id){if(!confirm('למחוק את המשתמש?'))return;await api('/api/pinkus/users/'+id,{method:'DELETE'});loadUsers();toast('נמחק');}
+function muRole(){const r=$('mu-role').value;$('mu-mef-wrap').style.display=r==='tzaer'?'block':'none';$('mu-team-wrap').style.display=r==='mefakatz'?'block':'none';}
+function openUser(id){
+  const u=id?USERS.find(x=>x.id===id):null;
+  $('mu-id').value=id||'';$('mu-title').textContent=u?'עריכת משתמש':'הוסף משתמש';
+  $('mu-name').value=u?u.full_name:'';$('mu-user').value=u?u.username:'';$('mu-user').disabled=!!u;
+  $('mu-role').value=u?u.role:'mefakatz';$('mu-pass').value='';
+  $('mu-pass-lbl').textContent=u?'סיסמה חדשה (ריק = ללא שינוי)':'סיסמה';
+  $('mu-mef').innerHTML='<option value="">— ללא —</option>'+MEFS.map(m=>`<option value="${m.id}">${esc(m.full_name)}</option>`).join('');
+  $('mu-team').innerHTML='<option value="">— ללא צוות —</option>'+TEAMS.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  muRole();
+  if(u&&u.mefakatz_id)$('mu-mef').value=u.mefakatz_id;
+  if(u&&u.team_id)$('mu-team').value=u.team_id;
+  openM('m-user');
+}
+async function saveUser(){
+  const id=$('mu-id').value,role=$('mu-role').value;
+  const body={full_name:$('mu-name').value.trim(),role,mefakatz_id:role==='tzaer'?($('mu-mef').value||null):null,team_id:role==='mefakatz'?($('mu-team').value||null):null,password:$('mu-pass').value};
+  if(id){await api('/api/pinkus/users/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
+  else{body.username=$('mu-user').value.trim();if(!body.username||!body.password){toast('חסר שם משתמש/סיסמה');return;}
+    const r=await api('/api/pinkus/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.status===409){toast('שם משתמש תפוס');return;}}
+  closeM('m-user');loadUsers();toast('נשמר ✓');
+}
+
+/* ===== IMPORT ===== */
+function doImport(){const f=$('imp-file').files[0];if(!f){toast('בחר קובץ');return;}
+  const rd=new FileReader();rd.onload=async()=>{
+    const r=await api('/api/pinkus/users/import-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fileBase64:rd.result})});
+    if(!r.ok){toast('הייבוא נכשל');return;}const res=await r.json();const c=res.filter(x=>x.created).length;
+    $('imp-res').innerHTML=`<div class="sec-title">נוצרו ${c} / ${res.length}</div><div class="card" style="padding:6px 12px"><table><tr><th>משתמש</th><th>סטטוס</th></tr>${res.map(x=>`<tr><td>${esc(x.username)}</td><td>${x.created?'<span class="badge b-mef">נוצר</span>':'<span class="badge b-tz">'+esc(x.skipped)+'</span>'}</td></tr>`).join('')}</table></div>`;loadUsers();};
+  rd.readAsDataURL(f);}
+
+/* ===== EXPORT ===== */
+function openExport(){$('exp-fields').innerHTML=Object.entries(EXP_FIELDS).map(([k,v])=>`<label class="chkfield"><input type="checkbox" style="width:auto" value="${k}" ${['full_name','mefakatz_name','team_name','phone','city'].includes(k)?'checked':''}> ${v}</label>`).join('');openM('m-export');}
+function doExport(){const f=[...document.querySelectorAll('#exp-fields input:checked')].map(c=>c.value);if(!f.length){toast('בחר שדות');return;}location.href='/api/pinkus/commander/export-cadets?fields='+f.join(',');closeM('m-export');}
+
+/* ===== TEAMS ===== */
+const DEFAULT_ROLES=['מפקץ','סגן מפקץ','רס״פ','מרכזת הדרכה'];
+async function loadTeams(){
+  const r=await api('/api/pinkus/teams');TEAMS=await r.json();
+  const r2=await api('/api/pinkus/mefakatzim');MEFS=await r2.json();
+  $('teams-list').innerHTML=TEAMS.map(t=>{
+    const mefs=MEFS.filter(m=>m.team_name===t.name);
+    const staff=t.staff||[];
+    return `<div class="card"><div class="spread"><div><h3>${esc(t.name)}</h3><div class="muted">${t.mef_count} מפקצ״ים</div></div>
+      <div class="row"><button class="btn sm gray" onclick='openTeam(${t.id})'>✎</button><button class="btn sm danger" onclick="delTeam(${t.id})">🗑</button></div></div>
+      ${staff.length?`<div style="margin-top:10px">${staff.map(s=>`<div style="font-size:13px;padding:3px 0"><span class="muted">${esc(s.role)}:</span> <b>${esc(s.name)}</b></div>`).join('')}</div>`:''}
+      ${mefs.length?`<div style="margin-top:8px">${mefs.map(m=>`<span class="badge b-mef" style="margin:2px">${esc(m.full_name)}</span>`).join('')}</div>`:''}
+    </div>`;}).join('')||'<div class="card muted">אין צוותים</div>';
+}
+function renderStaffRows(staff){
+  $('mt-staff').innerHTML=(staff||[]).map((s,i)=>`<div class="row" style="margin-bottom:8px;flex-wrap:nowrap">
+    <input style="flex:1" placeholder="תפקיד" value="${esc(s.role||'')}" data-si="${i}" data-sf="role" list="staff-roles">
+    <input style="flex:2" placeholder="שם" value="${esc(s.name||'')}" data-si="${i}" data-sf="name">
+    <button class="btn sm danger" style="flex:0 0 auto" onclick="rmStaffRow(${i})">✕</button>
+  </div>`).join('')+`<datalist id="staff-roles">${DEFAULT_ROLES.map(r=>`<option value="${r}">`).join('')}</datalist>`;
+}
+function addStaffRow(){const rows=collectStaff();rows.push({role:'',name:''});renderStaffRows(rows);}
+function rmStaffRow(i){const rows=collectStaff();rows.splice(i,1);renderStaffRows(rows);}
+function collectStaff(){const rows=[];document.querySelectorAll('#mt-staff [data-si]').forEach(el=>{const i=+el.dataset.si;rows[i]=rows[i]||{};rows[i][el.dataset.sf]=el.value;});return rows.filter(r=>r.role||r.name);}
+function openTeam(id){
+  const t=id?TEAMS.find(x=>x.id===id):null;
+  $('mt-id').value=id||'';$('mt-title').textContent=t?'עריכת צוות':'צוות חדש';$('mt-name').value=t?t.name:'';
+  renderStaffRows(t?t.staff:[]);openM('m-team');}
+async function saveTeam(){const id=$('mt-id').value;const name=$('mt-name').value.trim();if(!name){toast('חסר שם');return;}
+  const staff=collectStaff();
+  if(id){await api('/api/pinkus/teams/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,staff})});}
+  else{const r=await api('/api/pinkus/teams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,staff})});if(r.status===409){toast('שם קיים');return;}}
+  closeM('m-team');loadTeams();toast('נשמר ✓');}
+async function delTeam(id){if(!confirm('למחוק צוות? המפקצ״ים לא יימחקו'))return;await api('/api/pinkus/teams/'+id,{method:'DELETE'});loadTeams();toast('נמחק');}
+
+/* ===== ANNOUNCE ===== */
+const CLOUD='dbe0swkki',PRESET='יהונתן';
+function anType(t){anTypeV=t;document.querySelectorAll('#an-type button').forEach(b=>b.classList.toggle('on',b.dataset.v===t));
+  $('an-opts-wrap').style.display=t==='survey'?'block':'none';
+  $('an-link-wrap').style.display=t==='link'?'block':'none';
+  $('an-popup-wrap').style.display=t==='popup'?'block':'none';
+  if(t==='survey'&&!document.querySelectorAll('#an-opts input').length){addOpt();addOpt();}}
+function anScope(){const s=$('an-scope').value;
+  $('an-mef-wrap').style.display=s==='mefakatz_cadets'?'block':'none';
+  $('an-team-wrap').style.display=(s==='team_cadets'||s==='team_mefakatzim')?'block':'none';
+  $('an-cad-wrap').style.display=s==='personal'?'block':'none';}
+function addOpt(){const d=document.createElement('div');d.style.marginBottom='6px';d.innerHTML='<input placeholder="אפשרות">';$('an-opts').appendChild(d);}
+async function uploadPopupImg(input){
+  const file=input.files[0];if(!file)return;
+  $('an-img-preview').innerHTML='<span class="muted">מעלה...</span>';
+  const fd=new FormData();fd.append('file',file);fd.append('upload_preset',PRESET);
+  const r=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`,{method:'POST',body:fd});
+  const d=await r.json();if(d.secure_url){$('an-img-url').value=d.secure_url;$('an-img-preview').innerHTML=`<img src="${d.secure_url}" style="max-width:100%;border-radius:10px;margin-top:4px">`;}
+}
+async function loadAnnounce(){
+  const r2=await api('/api/pinkus/mefakatzim');MEFS=await r2.json();
+  const r3=await api('/api/pinkus/teams');TEAMS=await r3.json();
+  const r4=await api('/api/pinkus/commander/overview');const d=await r4.json();
+  $('an-mef').innerHTML=MEFS.map(m=>`<option value="${m.id}">${esc(m.full_name)}</option>`).join('');
+  $('an-team').innerHTML=TEAMS.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  const allUsers=[...d.cadets.map(c=>({...c,label:`${c.full_name} (צוער)`})),...MEFS.map(m=>({...m,label:`${m.full_name} (מפקץ)`}))];
+  $('an-cad').innerHTML=allUsers.map(u=>`<option value="${u.id}">${esc(u.label)}</option>`).join('');
+  loadSentAnnounce();}
+async function loadSentAnnounce(){
+  const r=await api('/api/pinkus/commander/announcements');const list=await r.json();
+  const SCOPE_LABEL={'all_cadets':'כל הצוערים','all_mefakatzim':'כל המפקצים','team_cadets':'צוות — צוערים','team_mefakatzim':'צוות — מפקצים','mefakatz_cadets':'קבוצת מפקץ','personal':'אישי'};
+  $('an-sent').innerHTML=list.length?list.map(a=>`<div class="card">
+    <div class="spread"><div><h3>${esc(a.title)}</h3><div class="muted" style="font-size:12px">${SCOPE_LABEL[a.scope]||a.scope} · ${a.type==='popup'?'📣 פופאפ':a.type}</div></div>
+    ${a.is_popup?'<span class="badge" style="background:#fdf0e3;color:#c47a1e">פופאפ</span>':''}</div>
+    ${a.image_url?`<img src="${esc(a.image_url)}" style="max-width:100%;border-radius:10px;margin-top:8px">`:a.content?`<div class="muted" style="margin-top:4px">${esc(a.content)}</div>`:''}
+    ${a.type==='survey'?`<div class="muted" style="margin-top:6px;font-size:12px">${a.response_count} תגובות</div>`:''}
+  </div>`).join(''):'<div class="card muted">לא נשלחו הודעות</div>';}
+async function sendAnnounce(){const scope=$('an-scope').value;
+  const body={scope,type:anTypeV,title:$('an-title').value.trim(),content:$('an-content').value,link_url:$('an-link').value,
+    image_url:$('an-img-url').value||null,is_popup:anTypeV==='popup'};
+  if(scope==='personal')body.target_id=$('an-cad').value;
+  if(scope==='mefakatz_cadets')body.mefakatz_scope_id=$('an-mef').value;
+  if(scope==='team_cadets'||scope==='team_mefakatzim')body.team_scope_id=$('an-team').value;
+  if(anTypeV==='survey')body.options=[...document.querySelectorAll('#an-opts input')].map(i=>i.value);
+  if(!body.title){toast('חסרה כותרת');return;}
+  await api('/api/pinkus/commander/announce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  toast('נשלח ✓');$('an-title').value='';$('an-content').value='';$('an-img-url').value='';$('an-img-preview').innerHTML='';loadSentAnnounce();}
+
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeM(m.id);}));
+(async()=>{try{const r=await fetch('/api/pinkus/me');if(!r.ok){location.href='/pinkus';return;}ME=await r.json();if(ME.role!=='commander'){location.href='/pinkus';return;}$('hd-name').textContent=ME.full_name;loadOverview();}catch(e){location.href='/pinkus';}})();
+</script>
+</body>
+</html>
