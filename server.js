@@ -124,6 +124,11 @@ try { db.prepare("ALTER TABLE announcements ADD COLUMN is_popup INTEGER DEFAULT 
 try {
   db.prepare("UPDATE ogden_chapters SET url = '/ogden/' || start_page || '.pdf' WHERE url LIKE '%cloudinary%'").run();
 } catch(e) {}
+// Remove quotes from team names
+try { db.prepare("UPDATE teams SET name='חלג' WHERE name='חל\"ג'").run(); } catch(e) {}
+try { db.prepare("UPDATE teams SET name='אלמר' WHERE name='אלמ\"ר'").run(); } catch(e) {}
+try { db.prepare("UPDATE users SET full_name='מפקד חלג' WHERE full_name='מפקד חל\"ג'").run(); } catch(e) {}
+try { db.prepare("UPDATE users SET full_name='מפקד אלמר' WHERE full_name='מפקד אלמ\"ר'").run(); } catch(e) {}
 
 // Ogden chapters table
 db.exec(`
@@ -176,7 +181,7 @@ if (!db.prepare("SELECT 1 FROM ogden_chapters LIMIT 1").get()) {
 }
 
 // Seed teams
-const DEFAULT_TEAMS = ["חל\"ג","אלמ\"ר","הובלה","רפואה","טנא"];
+const DEFAULT_TEAMS = ["חלג","אלמר","הובלה","רפואה","טנא"];
 DEFAULT_TEAMS.forEach(t => {
   try { db.prepare("INSERT INTO teams (name) VALUES (?)").run(t); } catch(e) {}
 });
@@ -203,8 +208,8 @@ for (const a of cmdAccounts) {
   const teams = db.prepare("SELECT id,name FROM teams").all();
   const teamId = name => (teams.find(t=>t.name===name)||teams[0])?.id;
   const MEF_ACCOUNTS = [
-    {u:'mefaked_halg',  n:"מפקד חל\"ג",  team:"חל\"ג"},
-    {u:'mefaked_almar', n:"מפקד אלמ\"ר", team:"אלמ\"ר"},
+    {u:'mefaked_halg',  n:"מפקד חלג",  team:"חלג"},
+    {u:'mefaked_almar', n:"מפקד אלמר", team:"אלמר"},
     {u:'mefaked_hovla', n:'מפקד הובלה',  team:'הובלה'},
     {u:'mefaked_refua', n:'מפקד רפואה',  team:'רפואה'},
     {u:'mefaked_tana',  n:'מפקד טנא',    team:'טנא'},
@@ -233,8 +238,8 @@ if (!db.prepare("SELECT 1 FROM users WHERE role='mefakatz' LIMIT 1").get()) {
   const teams = db.prepare("SELECT id,name FROM teams").all();
   const teamId = name => (teams.find(t=>t.name===name)||teams[0]).id;
   const MEFS = [
-    {u:'mefaked_halg',  n:"מפקד חל\"ג",  team:"חל\"ג"},
-    {u:'mefaked_almar', n:"מפקד אלמ\"ר", team:"אלמ\"ר"},
+    {u:'mefaked_halg',  n:"מפקד חלג",  team:"חלג"},
+    {u:'mefaked_almar', n:"מפקד אלמר", team:"אלמר"},
     {u:'mefaked_hovla', n:'מפקד הובלה',  team:'הובלה'},
     {u:'mefaked_refua', n:'מפקד רפואה',  team:'רפואה'},
     {u:'mefaked_tana',  n:'מפקד טנא',    team:'טנא'},
