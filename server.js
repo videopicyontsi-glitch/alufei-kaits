@@ -650,10 +650,16 @@ app.post('/api/pinkus/tzaer/assignments/:id/submit', requirePinkusAuth(['tzaer']
 });
 app.get('/api/pinkus/tzaer/grades', requirePinkusAuth(['tzaer']), (req, res) => {
   const u = req.session.pinkusUser;
-  res.json(db.prepare(`
-    SELECT e.id,e.name,e.date,g.grade,g.notes
+  const exams = db.prepare(`
+    SELECT e.id,e.name,e.date,g.grade,g.notes,'exam' AS kind
     FROM exams e LEFT JOIN exam_grades g ON g.exam_id=e.id AND g.cadet_id=?
-    WHERE e.mefakatz_id=? AND e.published=1 ORDER BY e.date DESC, e.id DESC`).all(u.id, u.mefakatz_id));
+    WHERE e.mefakatz_id=? AND e.published=1 ORDER BY e.date DESC, e.id DESC`).all(u.id, u.mefakatz_id);
+  const rating = db.prepare(`SELECT score,notes FROM cadet_ratings WHERE cadet_id=?`).get(u.id);
+  const cmdGrade = db.prepare(`SELECT score,notes FROM commander_grades WHERE cadet_id=?`).get(u.id);
+  const summary = [];
+  if (rating && rating.score != null) summary.push({ name:'ציון מפקץ', grade: rating.score, notes: rating.notes||'', kind:'summary' });
+  if (cmdGrade && cmdGrade.score != null) summary.push({ name:'ציון מפקד קורס', grade: cmdGrade.score, notes: cmdGrade.notes||'', kind:'summary' });
+  res.json([...summary, ...exams]);
 });
 app.get('/api/pinkus/tzaer/announcements', requirePinkusAuth(['tzaer']), (req, res) => {
   const u = req.session.pinkusUser;

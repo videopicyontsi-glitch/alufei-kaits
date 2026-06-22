@@ -635,8 +635,7 @@ async function loadOgden(){
           <div class="muted" style="font-size:12px;margin-top:2px">${c.end_page-c.start_page+1} עמודים · עמ׳ ${c.start_page}–${c.end_page}</div>
         </div>
         <div class="row" style="gap:10px">
-          <a href="https://docs.google.com/viewer?url=${encodeURIComponent(c.url)}&embedded=true" target="_blank" class="btn sm sec" style="text-decoration:none">📄 צפה</a>
-          <a href="${esc(c.url)}" download class="btn sm sec" style="text-decoration:none" title="הורד">⬇</a>
+          <a href="${esc(c.url)}" target="_blank" class="btn sm sec" style="text-decoration:none">📄 צפה והורד</a>
           <button class="toggle ${c.visible?'on':''}" onclick="toggleOgden(${c.id},this)"></button>
         </div>
       </div>

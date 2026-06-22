@@ -158,8 +158,7 @@ async function loadOgden(){
           <div class="muted" style="font-size:12px;margin-top:2px">${c.end_page-c.start_page+1} עמודים</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-          <a href="https://docs.google.com/viewer?url=${encodeURIComponent(c.url)}&embedded=true" target="_blank" style="text-decoration:none;background:var(--green);color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700">📄 צפה</a>
-          <a href="${esc(c.url)}" download style="text-decoration:none;background:var(--line);color:var(--ink);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700">⬇ הורד</a>
+          <a href="${esc(c.url)}" target="_blank" style="text-decoration:none;background:var(--green);color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700">📄 צפה והורד</a>
         </div>
       </div>`).join('')}`).join('');
 }
