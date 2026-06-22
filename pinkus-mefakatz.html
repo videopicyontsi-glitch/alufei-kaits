@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a5f3d">
+<title>פנקס מפק״ץ</title>
+<style>
+  :root{--green:#0f9d63;--green-d:#0c7a4e;--green-dd:#0a5f3d;--navy:#16223a;--silver:#aab2bd;--bg:#f3f5f8;--card:#ffffff;--ink:#141b27;--muted:#71798a;--line:#eceff3;--pass:#0f9d63;--fail:#e0533d;--accent:#19b67e;--shadow:0 2px 8px rgba(20,40,30,.05),0 8px 24px rgba(20,40,30,.05);--shadow-lg:0 6px 18px rgba(20,40,30,.08),0 20px 48px rgba(20,40,30,.10);--r:18px;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Hebrew",sans-serif;background:linear-gradient(180deg,#f6f8fa,#eef2f6 60%);background-attachment:fixed;color:var(--ink);line-height:1.55;font-size:15px;padding-bottom:calc(86px + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+  h1,h2,h3,h4{margin:0 0 .4em}
+  header{position:sticky;top:0;z-index:50;color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 14px;background:linear-gradient(135deg,var(--green-dd),var(--green) 90%);box-shadow:0 6px 20px rgba(12,90,60,.22);border-radius:0 0 22px 22px}
+  .hd{display:flex;align-items:center;gap:12px;justify-content:space-between}
+  .hd .t b{font-size:18px;font-weight:800;display:block}
+  .hd .t span{font-size:11.5px;opacity:.9}
+  .logout{background:rgba(255,255,255,.2);border:none;color:#fff;padding:9px 14px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer}
+  main{padding:16px 14px 0;max-width:760px;margin:0 auto}
+  .view{display:none;animation:fade .25s}.view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .card h3{font-size:15.5px;font-weight:700}
+  .muted{color:var(--muted);font-size:13px}
+  .sec-title{font-size:12px;font-weight:800;color:var(--green-d);margin:18px 6px 8px;text-transform:uppercase;letter-spacing:.6px}
+  button{font-family:inherit;cursor:pointer;touch-action:manipulation}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:none;background:linear-gradient(135deg,var(--green-d),var(--green));color:#fff;padding:11px 17px;border-radius:14px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(15,157,99,.25);transition:transform .12s}
+  .btn:active{transform:scale(.97)}
+  .btn.sec{background:#e9f5ef;color:var(--green-d);border:1px solid #cfeadd;box-shadow:none}
+  .btn.gray{background:#eef1f5;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+  .btn.danger{background:#fdeeeb;color:var(--fail);border:1px solid #f6d2cb;box-shadow:none}
+  .btn.sm{padding:8px 13px;font-size:12.5px;border-radius:11px}
+  .btn.block{width:100%;justify-content:center}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .spread{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .ring{--p:0;width:58px;height:58px;border-radius:50%;flex:0 0 auto;background:conic-gradient(var(--green) calc(var(--p)*1%),#e6ebf0 0);display:grid;place-items:center;position:relative}
+  .ring::before{content:"";position:absolute;inset:6px;background:var(--card);border-radius:50%}
+  .ring b{position:relative;font-size:13px;font-weight:800}
+  .bar{height:9px;background:#e7ebf0;border-radius:20px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--accent));border-radius:20px;transition:width .4s}
+  input,textarea,select{font-family:inherit;font-size:14px;width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fafbfc;color:var(--ink);transition:border-color .15s}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(15,157,99,.13)}
+  textarea{resize:vertical;min-height:60px}
+  label.fld{display:block;margin:11px 0 5px;font-size:12px;font-weight:700;color:var(--muted)}
+  .st{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;background:#e7f6ee;color:var(--pass);border:1px solid #c4e8d6}
+  .li{display:flex;gap:11px;align-items:flex-start;padding:11px 4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .li:last-child{border-bottom:none}
+  .li.done .txt{text-decoration:line-through;color:var(--muted)}
+  .chk{flex:0 0 auto;width:24px;height:24px;border-radius:8px;border:2px solid #c7cdd8;display:grid;place-items:center;cursor:pointer;transition:.18s}
+  .chk.on{background:linear-gradient(135deg,var(--green-d),var(--green));border-color:var(--green);color:#fff}
+  .chk svg{width:13px;height:13px;opacity:0}.chk.on svg{opacity:1}
+  .txt{font-size:14px;flex:1;min-width:0;cursor:pointer}
+  .infobtn{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--muted);font-size:13px;font-weight:800;display:grid;place-items:center;cursor:pointer}
+  .info{font-size:12.5px;color:var(--muted);background:#f4f7f9;border-radius:10px;padding:9px 11px;margin-top:6px;width:100%;display:none;border:1px solid var(--line);line-height:1.6}
+  .li.show .info{display:block}
+  .cadet-row{display:flex;align-items:center;gap:12px;padding:13px 6px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:12px;transition:background .15s}
+  .cadet-row:active{background:#f4f7f9}
+  .avatar{width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,var(--navy),var(--green));color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px;flex:0 0 auto}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:60px;padding:9px;border-radius:11px;border:1.5px solid var(--line);background:#fff;font-size:12px;font-weight:700;color:var(--muted);transition:.12s}
+  .seg button:active{transform:scale(.97)}
+  .seg button.on[data-v="yes"],.seg button.on[data-v="pass"],.seg button.on[data-v="present"]{background:linear-gradient(135deg,var(--green-d),var(--green));border-color:var(--green);color:#fff}
+  .seg button.on[data-v="no"],.seg button.on[data-v="fail"],.seg button.on[data-v="absent"]{background:var(--fail);border-color:var(--fail);color:#fff}
+  .modal{position:fixed;inset:0;z-index:100;background:rgba(15,25,20,.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center}
+  .modal.on{display:flex;animation:fade .2s}
+  .sheet{background:var(--bg);width:100%;max-width:760px;max-height:94vh;overflow:auto;border-radius:24px 24px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;box-shadow:var(--shadow-lg)}
+  .sheet .grip{width:42px;height:5px;background:#d4dae1;border-radius:3px;margin:8px auto}
+  .sheet-h{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:2}
+  .x{background:#fff;border:1px solid var(--line);border-radius:50%;width:34px;height:34px;font-size:20px;color:var(--muted);line-height:1;cursor:pointer;display:grid;place-items:center}
+  .grp-h{font-size:12px;font-weight:800;color:var(--green-d);margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid #e3f0e9;text-transform:uppercase;letter-spacing:.4px}
+  .cert-item{padding:10px 2px;border-bottom:1px solid var(--line)}
+  .cert-item:last-child{border-bottom:none}
+  .cert-item .lab{margin-bottom:8px;font-size:14px;font-weight:600}
+  .score-in{width:92px;text-align:center;padding:8px;flex:0 0 auto}
+  .subcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .subcard .rm{background:none;border:none;color:var(--fail);font-size:12px;font-weight:700;padding:0;cursor:pointer}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .b-pub{background:#e7f6ee;color:var(--green-d)}.b-draft{background:#eef1f5;color:var(--muted)}
+  .qbadge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;min-width:22px;display:inline-grid;place-items:center}
+  .qbadge.full{background:#e7f6ee;color:var(--pass)}.qbadge.empty{background:#eef1f5;color:var(--muted)}
+  .accordion .ac-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:14px 2px;cursor:pointer;font-weight:700}
+  .accordion .ac-b{display:none;padding:2px 2px 14px;border-bottom:1px solid var(--line)}
+  .accordion .ac.open .ac-b{display:block}
+  .accordion .ac-h .arr{transition:.2s;color:var(--muted);font-size:12px}
+  .accordion .ac.open .arr{transform:rotate(180deg)}
+  .accordion .ac-b p{margin:.5em 0;font-size:14px}
+  blockquote{margin:.7em 0;padding:12px 14px;background:linear-gradient(135deg,#eaf6f0,#f1f9f5);border-inline-start:4px solid var(--green);border-radius:12px;font-size:14px;font-style:italic}
+  .stat{display:flex;gap:10px;margin-bottom:14px}
+  .stat .box{flex:1;background:linear-gradient(135deg,#f6f9fb,#eef4f2);border:1px solid var(--line);border-radius:14px;padding:12px 10px;text-align:center}
+  .stat .box b{display:block;font-size:22px;font-weight:800;color:var(--green-d)}
+  .stat .box span{font-size:11px;color:var(--muted);font-weight:600}
+  .toggle{width:42px;height:24px;border-radius:14px;background:#d4dae1;border:none;position:relative;cursor:pointer;transition:.18s;flex:0 0 auto}
+  .toggle.on{background:var(--green)}.toggle::after{content:"";position:absolute;top:3px;right:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.18s}.toggle.on::after{right:21px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:right;padding:9px 6px;border-bottom:1px solid var(--line)}
+  th{font-size:12px;color:var(--muted)}
+  td input{padding:7px 8px}
+  .search{position:relative;margin-bottom:12px}
+  .search input{padding-inline-start:38px}
+  .search svg{position:absolute;inset-inline-start:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted)}
+  nav.tab{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;gap:1px;padding:8px 4px max(env(safe-area-inset-bottom),8px);background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);border-top:1px solid rgba(0,0,0,.05);box-shadow:0 -6px 20px rgba(20,40,30,.06)}
+  nav.tab button{flex:1;background:none;border:none;padding:8px 1px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:8.5px;font-weight:700;min-height:52px;border-radius:12px}
+  nav.tab button.on{color:var(--green-d);background:#e9f6ef}
+  nav.tab svg{width:21px;height:21px}
+  .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow-lg)}
+  .toast.on{opacity:1}
+  .stars-row{display:flex;gap:3px;direction:ltr;margin:4px 0}
+  .stars-row span{font-size:20px;cursor:pointer;opacity:.3;transition:.1s}
+  .stars-row span.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="t"><b>פנקס מפק״ץ</b><span id="hd-name">— <span id="hd-team" style="opacity:.75"></span></span></div>
+    <button class="logout" onclick="logout()">יציאה</button>
+  </div>
+</header>
+<main>
+  <!-- HOME -->
+  <section class="view active" id="v-home">
+    <div class="stat">
+      <div class="box"><b id="s-cadets">0</b><span>צוערים</span></div>
+      <div class="box"><b id="s-cert">0%</b><span>הסמכות</span></div>
+      <div class="box"><b id="s-tasks">0%</b><span>משימות שבועיות</span></div>
+    </div>
+    <div class="card">
+      <div class="spread"><h3>התקדמות הצוות</h3><div class="ring" id="home-ring"><b id="home-pct">0%</b></div></div>
+      <div class="bar" style="margin-top:10px"><i id="home-bar" style="width:0%"></i></div>
+    </div>
+    <div class="sec-title">עקומת מתח ומורל</div>
+    <div class="card" id="curve"></div>
+    <div class="sec-title">צוערים</div>
+    <div id="home-cadets"></div>
+  </section>
+
+  <!-- CADETS -->
+  <section class="view" id="v-cadets">
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn sm sec" onclick="openBulk()">סימון קבוצתי ✓</button>
+    </div>
+    <div class="card" style="padding:6px 12px"><div id="cad-list"></div></div>
+  </section>
+
+  <!-- WEEKS -->
+  <section class="view" id="v-weeks"><div id="weeks"></div></section>
+
+  <!-- BOOK -->
+  <section class="view" id="v-book">
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="book-search" placeholder="חיפוש בספר..." oninput="renderBook(this.value)"></div>
+    <div id="book"></div>
+  </section>
+
+  <!-- QBANK -->
+  <section class="view" id="v-tools">
+    <div class="card">
+      <div class="spread"><span>שאלות מוכנות</span><b id="qb-count">0 / 16</b></div>
+      <div class="bar" style="margin-top:6px"><i id="qb-bar" style="width:0%"></i></div>
+    </div>
+    <div id="qbank"></div>
+  </section>
+
+  <!-- OGDEN -->
+  <section class="view" id="v-ogden">
+    <div class="card" style="background:linear-gradient(135deg,#e7f6ee,#f1f9f5);border:1px solid #c4e8d6;margin-bottom:16px">
+      <b>אוגדן מצגות קק״צ</b>
+      <div class="muted" style="margin-top:4px;font-size:13px">הפעל את הטוגל לחשיפת המצגת לצוערים שלך. כל מצגת שתחשוף תופיע לצוערים בלשונית החומרים שלהם.</div>
+    </div>
+    <div id="ogden-list"></div>
+  </section>
+
+  <!-- EXAMS -->
+  <section class="view" id="v-exams">
+    <div class="row" style="margin-bottom:12px"><button class="btn sm" onclick="openExam()">+ מבחן חדש</button></div>
+    <div id="exam-list"></div>
+  </section>
+
+  <!-- ANNOUNCE -->
+  <section class="view" id="v-announce">
+    <div class="card"><h3>שליחת הודעה</h3>
+      <label class="fld">סוג</label>
+      <div class="seg" id="an-type"><button class="on" data-v="message" onclick="anType('message')">הודעה</button><button data-v="survey" onclick="anType('survey')">סקר</button><button data-v="link" onclick="anType('link')">קישור</button></div>
+      <label class="fld">יעד</label>
+      <select id="an-scope" onchange="anScope()"><option value="mefakatz_cadets">כל הצוערים שלי</option><option value="personal">צוער ספציפי</option></select>
+      <div id="an-cad-wrap" style="display:none"><label class="fld">צוער</label><select id="an-cad"></select></div>
+      <label class="fld">כותרת</label><input id="an-title">
+      <label class="fld">תוכן</label><textarea id="an-content"></textarea>
+      <div id="an-link-wrap" style="display:none"><label class="fld">קישור</label><input id="an-link" placeholder="https://..."></div>
+      <div id="an-opts-wrap" style="display:none"><label class="fld">אפשרויות</label><div id="an-opts"></div><button class="btn sm sec" onclick="addOpt()">+ אפשרות</button></div>
+      <button class="btn block" style="margin-top:16px" onclick="sendAnnounce()">שלח</button>
+    </div>
+    <div class="sec-title">הודעות שנשלחו</div><div id="an-sent"></div>
+  </section>
+</main>
+
+<nav class="tab">
+  <button class="on" data-go="home" onclick="go('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>בית</button>
+  <button data-go="cadets" onclick="go('cadets')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>צוערים</button>
+  <button data-go="weeks" onclick="go('weeks')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>שבועות</button>
+  <button data-go="book" onclick="go('book')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/></svg>ספר</button>
+  <button data-go="tools" onclick="go('tools')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>שאלות</button>
+  <button data-go="ogden" onclick="go('ogden')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>אוגדן</button>
+  <button data-go="exams" onclick="go('exams')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>מבחנים</button>
+  <button data-go="announce" onclick="go('announce')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8v18l-18-8z"/></svg>הודעות</button>
+</nav>
+
+<!-- CADET MODAL -->
+<div class="modal" id="m-cadet"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3 id="mc-title">תיק צוער</h3><button class="x" onclick="closeM('m-cadet')">×</button></div>
+  <div id="mc-body"></div>
+</div></div>
+
+<!-- BULK MODAL -->
+<div class="modal" id="m-bulk"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3>סימון קבוצתי</h3><button class="x" onclick="closeM('m-bulk')">×</button></div>
+  <div id="mb-body"></div>
+</div></div>
+
+<!-- EXAM MODAL -->
+<div class="modal" id="m-exam"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3>מבחן חדש</h3><button class="x" onclick="closeM('m-exam')">×</button></div>
+  <label class="fld">שם המבחן</label><input id="ex-name">
+  <label class="fld">תאריך</label><input id="ex-date" type="date">
+  <button class="btn block" style="margin-top:14px" onclick="saveExam()">צור</button>
+</div></div>
+
+<!-- GRADES MODAL -->
+<div class="modal" id="m-grades"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3 id="gr-title">ציונות</h3><button class="x" onclick="closeM('m-grades')">×</button></div>
+  <div class="card"><div class="spread"><span>פרסום לצוערים</span><button class="toggle" id="gr-pub" onclick="this.classList.toggle('on')"></button></div></div>
+  <div class="card" style="padding:6px 12px"><table id="gr-tbl"></table></div>
+  <div class="row" style="margin-top:12px"><button class="btn block" onclick="saveGrades()">שמור</button><button class="btn sec sm" onclick="exportGrades()">ייצוא CSV</button></div>
+</div></div>
+
+<!-- RESPONSES MODAL -->
+<div class="modal" id="m-resp"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3>תוצאות סקר</h3><button class="x" onclick="closeM('m-resp')">×</button></div>
+  <div id="resp-body"></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<script>
+/* ===== DATA ===== */
+const CERTS=[
+ {g:'מטלות צוער',type:'task',items:['סט״מ','כתיבת פק״א','המפקד כמחנך','מטלת מפק״ץ']},
+ {g:'מבחנים',type:'exam',items:['דמ״ש','מבחן בסיסי (בה״ד 1)','מבחן השלמה']},
+ {g:'ניהול מטווח',type:'pf',items:['מבחן מק פורק','מבחן בטיחות בנשק','מטווח עיוני','מטווח מעשי — יום','מטווח מעשי — לילה']},
+ {g:'תרגיל פרט',type:'pf',items:['פרט יבש — יום','פרט רטוב — יום','פרט יבש — לילה','פרט רטוב — לילה']},
+ {g:'נוכחות חובה',type:'att',items:['שדאות','הסמכת מח״צ','הגנה עצמית']}
+];
+const CERT_IDS=[];CERTS.forEach((g,gi)=>g.items.forEach((it,ii)=>CERT_IDS.push({id:'c'+gi+'_'+ii,name:it,grp:g.g,type:g.type})));
+function certDone(type,v){if(!v)return false;if(type==='task')return v.submitted==='yes';if(type==='exam')return v.score!=null&&v.score!=='';if(type==='pf')return v.result==='pass';if(type==='att')return v.result==='present';return false;}
+const SCORES=[['professional','ציר מקצועי'],['leadership','ציר מנהיגות'],['values','ציר ערכי'],['commander','הערכת מפק״ץ']];
+const CURVE=[
+ {w:'1',t:'כניסה',d:'קביעת סטנדרט. הצב טון חזק — מה שלא נקבע עכשיו, אבד.',c:'#1a7a4c'},
+ {w:'2',t:'שטח ומטווחים',d:'שיא אנרגטי. כאן שותלים את המשבר המבוקר הראשון.',c:'#2e8b57'},
+ {w:'3',t:'הנפילה',d:'עומס שיעורים ולחץ לפני המבחן. החזק אותם דרך הנפילה.',c:'#d68910'},
+ {w:'4',t:'נפילת משמעת',d:'אחרי המבחן יש צניחה. החזר אותם למיקוד.',c:'#cb7a2f'},
+ {w:'5',t:'כבר סיימנו',d:'אווירת סיום. שמור אותם דרוכים עד הטקס.',c:'#1e2a44'}
+];
+const WEEKS=[
+ {key:'prep1',title:'שבוע הכנה 1',sub:'מוכנות מקצועית, פיקודית וארגונית',items:[
+  ['שיחת תיאום ציפיות עם הסגל וחלוקת תחומי אחריות','ישיבת פתיחה עם כלל הסגל: תפיסת הפיקוד והחינוך, חלוקת אחריות, מנגנוני עבודה, שגרת ישיבות וקבלת החלטות.'],
+  ['ראיון טלפוני ראשוני','שיחת היכרות עם כל צוער טרם הקורס: קשר ראשוני, הצגת הסגל והקורס, תיאום ציפיות.'],
+  ['פתיחת קבוצת וואטסאפ צוותית','להוסיף את כלל הצוערים, לפרסם כללי שימוש ברורים.'],
+  ['הכנת טבלת פרטי הצוערים','לרכז פרטי קשר, נתונים אישיים, מידות ושיוך יחידתי.'],
+  ['תיקוף תוכנית ההשלמה החילית','לבחון כשירויות, מש״ש, מבחנים, תרגילים ואילוצי לו״ז.'],
+  ['הכנה לשיעורי מפק״צ','להשלים מערכי שיעור, מצגות, אמצעי המחשה, תרגילים ודוגמאות מניסיון אישי.'],
+  ['תיאום מדי א׳ קבע לטקס הסיום','לוודא כבר עכשיו זמינות מדי א׳, התאמות נדרשות והשלמת חוסרים.'],
+  ['סגירת מטלת מפק״צ ומחוון ציונים','להגדיר מטרות, אופן הערכה, מדדי הצלחה ומועדי ביצוע.'],
+  ['קביעת הנע״תים לשבוע הראשון','לשבץ צוערים חזקים ובעלי השפעה, במטרה לקבע סטנדרט גבוה.'],
+  ['הכנת שיחת המפק״צ ליום המכין','השיחה תכלול: הצגה עצמית, "אני מאמין", תיאום ציפיות, דרישות ערב צוות.']
+ ]},
+ {key:'prep2',title:'שבוע הכנה 2',sub:'סגירת ההכנות והמעבר לביצוע',items:[
+  ['השלמת ראיונות היכרות בסיסיים','להשלים ראיונות עם כלל הצוערים. יום הקליטה אינו המקום להשלמת היכרות בסיסית.'],
+  ['סיום הכנת שיעורי מפק״צ','בקרה סופית על כלל השיעורים — להגיע לקורס כשכל חומרי ההדרכה מוכנים.'],
+  ['הכנת שיחת פתיחה ליום הקליטה','מטרות השיחה: קביעת הסטנדרט, יצירת מחויבות, וחיבור הצוערים למטרות הקורס.'],
+  ['סיום הכנת ההשלמה החילית','לוודא שכל התיאומים מול בה״ד האם נסגרו.'],
+  ['שיבוץ אימון גופני יומי במש״ש','לקבוע מראש חלונות קבועים לאימוני כושר.'],
+  ['סידור הכיתה ליום הקליטה','ניקיון וסידור הכיתה, הכנת ציוד ותשורות. הרושם הראשוני מייצר את הסטנדרט הראשוני.']
+ ]},
+ {key:'w1',title:'שבוע 1',sub:'קביעת הסטנדרט',items:[
+  ['חלוקת תיק צוער','לחלק לכל צוער את תיק הצוער. כלי מרכזי להערכה.'],
+  ['ראיונות אישיים עם מפק״צ / סמפק״צ','ריאיון אישי על בסיס תיק הצוער + סיכום מסודר.'],
+  ['קבלת רשימת שוק ידע וחלוקת סדר הצגה','לחלק בין הצוערים ולקבוע סדר הצגה.'],
+  ['החלטה צוותית לגבי הדפסת חולצות ליום הספורט','קבלת החלטה צוותית והתחלת טיפול אם הוחלט להדפיס.'],
+  ['איתור צוערים לוחמים לסיוע בתרגילי פרט ובשדאות','לאתר צוערים רובאי 03 ומעלה ובעלי ניסיון מתאים.'],
+  ['חלוקת שיעורי שדאות בין הצוערים','לחלק את תכני השדאות ולהגדיר מועדי העברה.'],
+  ['ישיבת סגל לסיכום השבוע','סקירת מצב הצוות, משוב על בעלי התפקידים, עדכון תיקי צוער.'],
+  ['שיחת סיכום צוותית','סיכום הישגים ואתגרים, מישוב בעלי התפקידים, הפקת לקחים.'],
+  ['הצגת שימור / שיפור במליאה','הממ״ש יציג נושא אחד לשימור ואחד לשיפור.'],
+  ['הכנת הצוערים לשבוע 2','הכנה מנטלית ומנהלתית לשבוע השטח והמטווחים.'],
+  ['כתיבת שאלות למבחן המסכם','לכתוב שאלות על התכנים שהועברו השבוע ולהעבירן לגורם האחראי.']
+ ]},
+ {key:'w2',title:'שבוע 2',sub:'שטח ומטווחים',items:[
+  ['היערכות לדגלי החיל למסעון המטווח','לוודא מבעוד מועד שכל הציוד למסעון מוכן.'],
+  ['קה״ד — ניהול לו״ז שיעורי שדאות ושוק ידע','להנחות את הקה״ד לבנות ולנהל תוכנית מסודרת.'],
+  ['הכנה לשיעור "מפק״צ אורח"','להציג את ייעוד החיל ותפקידיו, להמחיש את הקשר למאמץ המבצעי.'],
+  ['הכנה לשיעור דילמות ערכיות','להכין תרחישים ודילמות. לפתח שיח פיקודי-ערכי.'],
+  ['סגירות השלמה — לוגיסטיקה ותיאומים','בקרה על כלל התיאומים לקראת ההשלמה החילית.'],
+  ['קה״ד — תזכור ובקרת הגשת מטלות','לוודא עמידה בדרישות ההגשה ובמועדים.'],
+  ['שיבוץ צוערים לכיתה הפוכה','חלוקה לצוותי הגנה והתקפה לקראת ההפעלה בשבוע 3.'],
+  ['הכנת סיכום תכני בה״ד 1 לקראת המבחן','להנחות את הקה״ד להכין סיכום מרוכז של כלל התכנים.'],
+  ['ישיבת סגל לסיכום השבוע','במתכונת הקבועה — חובה לפחות יום לפני היציאה הביתה.'],
+  ['שיחת סיכום צוותית','במתכונת הקבועה — בסיום להשלים תגובת נע״ת בתיק הצוער.'],
+  ['הצגת שימור / שיפור במליאה','הממ״ש מציג שימור ושיפור במליאה.'],
+  ['כתיבת שאלות למבחן המסכם','לכתוב שאלות על תכני השבוע ולהעבירן לגורם האחראי.']
+ ]},
+ {key:'w3',title:'שבוע 3',sub:'עומס לימודי והכנה למבחן',items:[
+  ['כיתה הפוכה — שיעורי הגנה והתקפה','להפעיל את מתודת הכיתה ההפוכה לפי החלוקה משבוע 2.'],
+  ['סגירות השלמה — לוגיסטיקה ותיאומים','להשלים את כלל התיאומים לקראת המעבר להשלמה החילית.'],
+  ['תיקוף ההכנה למבחן שיצר הקה״ד','לעבור על כלל חומרי ההכנה: כיסוי מלא של התכנים.'],
+  ['ישיבת סגל לסיכום השבוע','במתכונת הקבועה.'],
+  ['שיחת סיכום צוותית','במתכונת הקבועה.'],
+  ['הצגת שימור / שיפור במליאה','הממ״ש מציג שימור ושיפור במליאה.'],
+  ['כתיבת שאלות למבחן המסכם','לכתוב שאלות על תכני השבוע ולהעבירן לגורם האחראי.']
+ ]},
+ {key:'w4',title:'שבוע 4',sub:'השלמה חילית והנחת תשתית לסיום',items:[
+  ['מילוי תיקי צוער לקראת סיכום הקורס','הערכת ציר מנהיגות וערכים לכל צוער בשיתוף כלל הסגל.'],
+  ['סגירות השלמה — לוגיסטיקה ותיאומים לשבוע 5','לוודא שכל התיאומים לשבוע הסיום סגורים ומאושרים.'],
+  ['תכנון לו״ז שיחות סיכום קורס אישיות','לבנות תוכנית מסודרת לביצוע כלל השיחות במהלך שבוע 5.'],
+  ['תכנון שיחת סיכום קורס צוותית','להגדיר את מבנה השיחה, המסרים המרכזיים ודגשי הסיכום.'],
+  ['קל״ג — תיאום סיכות למדי א׳','לוודא הגעת כלל הסיכות והציוד הנדרש לטקס.'],
+  ['וידוא מדי א׳ קבע לטקס הסיום','לוודא מוכנות מלאה של מפק״צ וסמפק״צ לטקס.'],
+  ['ישיבת סגל לסיכום השבוע','במתכונת הקבועה.'],
+  ['שיחת סיכום צוותית','במתכונת הקבועה. דגש: להזכיר לצוערים להביא מדי א׳ תקינים.']
+ ]},
+ {key:'w5',title:'שבוע 5',sub:'השלמה וסיום הקורס',items:[
+  ['מיצוי דרישות הנע״תים טרם סגירת הערכות','לוודא שכל הנתונים הנדרשים להערכה נאספו ותועדו.'],
+  ['סגירת הערכות צוערים ומילוי תיקי צוער','דיון סגל מסכם וסגירת כלל ההערכות.'],
+  ['בחירת מצטיינים','מצטיין צוותי + המלצה למצטיין קורסי.'],
+  ['מילוי מסמכי העברת מקל','להשלים את כלל מסמכי ההעברה בהתאם להנחיות הקורס.'],
+  ['שיחות סיכום קורס אישיות','סיכום התהליך האישי, הצגת חוזקות ותחומי שיפור.'],
+  ['שיחת סיכום קורס צוותית','שיחה מסכמת על הדרך שהצוות עבר, ההישגים והאתגרים.'],
+  ['הצגת שימור / שיפור הקורס','הממ״ש יציג את עיקרי הפקת הלקחים הצוותית.'],
+  ['הכנת נאום מפק״צ לסיכום הקורס','נאום קצר, אישי וממוקד לקראת אירועי הסיום.'],
+  ['הכנת מצגת הפקת לקחים למפקד בה״ד 6','לרכז תובנות, הצלחות ופערים — לשיפור מתמיד של הקורס.']
+ ]}
+];
+const QTOPICS=['ניהול תחקיר','מבנה וארגון צה״ל','עקרונות המלחמה','תופעות המלחמה','עקרונות הפו״ש','הגנה','התקפה','פקמ״ב','נוה״ק וניהו״ק','ארבעת התחומים — הפעלת הכוח','ארבעת התחומים — בניין הכוח','אחריות וסמכות','מוסד המפקד ומערכת הציווים','רוח צה״ל ומגילת צה״ל','נקח״ל','מח״צ — מודל מגן הלוחם (יהלו״ם)'];
+const BOOK=[
+ {ch:'פרק 0 — תפיסה',secs:[
+  {h:'לפני שמתחילים — קרא את זה',b:`<p>אתה עומד לקבל את אחת הזכויות הגדולות שיש: ללוות קבוצה של אנשים שכבר הוכיחו מי הם. מילואימניקים שנתנו מאות ימים מאז השבעה באוקטובר, שברגע שבו היה ואקום במערכת קמו ואמרו "אני רוצה להוביל" — ובחרו לבוא לקורס קצינים ולהעמיס על הכתפיים עוד.</p><p>התפקיד שלך הוא ללוות אותם. לראות אותם באמת, לפרק איתם את מה שצריך לעבוד עליו, למשב בלי הפסקה, ולתת להם כלים להיות הקצינים הכי טובים — ובני אדם לפני הכל. ולהביא את כולם, כצוות אחד, לקו הסיום.</p><blockquote>תירגע. הכל בסדר. נעשה את הכל, ונבנה את זה ביחד.</blockquote>`},
+  {h:'המסע של הצוות',b:`<p>הצוות מגיע כקבוצת זרים, הרגילה לנורמות של מילואים, ונכנס למסגרת תובענית של משמעת, דוגמה אישית וסדר. את הפרקטיקה רובם כבר רכשו בשטח; התהליך המשמעותי כאן אחר — בנייה רגשית, מנטלית וערכית.</p>`},
+  {h:'בניית הסגל',b:`<p><b>סמפק״ץ.</b> תפקידו להשלים אותך. בהתחלה החזק את הטון חזק, ואז שחרר ותן לו לעוף.</p><p><b>רס״פ.</b> עוסק בעיקר בלוגיסטיקה, עובד מול הנגד שאחראי על הקורס.</p><p><b>מתא״ם.</b> עובד מול המדריכה הראשית, תומך בקציני התורנות.</p>`},
+  {h:'ניהול עקומת המתח והמורל',b:`<p>האתגר הגדול הוא "אווירת סיום קורס" — "אני כבר סגור, לא צריך להתאמץ". תפקידך לשמור אותם במתח מבוקר.</p><p>הכלי: <b>משבר מבוקר</b> — ביקורת אינטנסיבית על צוער, סכנת הדחה, עבירת משמעת כמנוף.</p><blockquote>אתם קצינים לפני הכל. איך שאתם רוצים שהחיילים שלכם יתנהגו — ככה תתנהגו.</blockquote>`}
+ ]},
+ {ch:'פרק 1 — הסמכות מחייבות',secs:[
+  {h:'דגשים כלליים',b:`<p>פרק זה כולל את כל ההסמכות שכלל הצוערים חייבים לעבור. באחריותך לנהל מעקב מסודר ולוודא זאת.</p><p><b>ניהול זמן.</b> להתריע ולתת מספיק זמן מראש לביצוע מטלות ולהכנה למבחנים.</p><p><b>עבודה צוותית ומשוב עמיתים.</b> הצוערים נמדדים כצוות — חשובה התמיכה ההדדית.</p>`},
+  {h:'מטלות צוער',b:`<p>סה״כ <b>4 מטלות חובה</b>. שלוש שייכות לפרק הבסיסי: <b>סט״מ</b>, <b>כתיבת פק״א</b>, <b>המפקד כמחנך</b>. המטלה הרביעית היא <b>מטלת מפק״צ</b>, נבדקת על ידך.</p>`},
+  {h:'מבחנים',b:`<p><b>דמ״ש.</b> חוברת ההכנה מחולקת כבר ביום המכין. החומר רב, אך המסר הוא שכולם יעברו.</p><p><b>מבחן בסיסי.</b> החומר נצבר לאורך שלושת השבועות הראשונים. כל מפק״צ בונה בנק שאלות: שאלה לכל אחד מ-16 הנושאים, ארבע תשובות.</p><p><b>מבחן השלמה.</b> מבוצע ומנוהל ע״י בה״ד האם.</p>`},
+  {h:'מטווח, פרט, שדאות, מח״צ, הגנה עצמית',b:`<p>כל התכנים מתבצעים בשבוע השני. ההסמכות "הרטובות" מחייבות תרגול יבש מקדים, ומתבצעות באופן טורי.</p><p><b>ניהול מטווח:</b> מק פורק · בטיחות בנשק · עיוני · מעשי יום/לילה.</p><p><b>תרגיל פרט</b> (לצוערים עם רובאי מתחת ל-03): יבש/רטוב יום/לילה.</p><p><b>שדאות:</b> בניהול הקה״ד, ב"כיתה הפוכה". חובת השתתפות.</p>`}
+ ]},
+ {ch:'פרק 2 — הלו״ז המבצעי',secs:[
+  {h:'שבועות ההכנה',b:`<p>תקופת ההשחזה. להגיע ערוך מול הסגל ומול עצמך לפני שהצוערים נכנסים.</p><blockquote>אם יתנו לי שש שעות לכרות עץ, אבלה את ארבע השעות הראשונות בהשחזת הגרזן. — מיוחס לאברהם לינקולן</blockquote>`},
+  {h:'שבוע 1 — קביעת סטנדרט',b:`<p>השבוע שבו אתה קובע את הטון. אם צריך הערת משמעת ביום הראשון — תן אותה. הטמע את תרבות המשוב מהרגע הראשון.</p>`},
+  {h:'שבוע 2 — שטח ומטווחים',b:`<p>שיא אנרגטי וגיבושי, ובו-זמנית שתילת המשבר המבוקר הראשון. נצל את זמני ההמתנה במטווח.</p>`},
+  {h:'שבוע 3 — הנפילה',b:`<p>עומס לימודי כבד. החזק אותם דרך הנפילה. אתה שומר הסף המקצועי.</p>`},
+  {h:'שבוע 4 — השלמה',b:`<p>אחרי המבחן יש נפילת משמעת — החזר אותם למיקוד. הנח את כל התשתית לשבוע 5.</p>`},
+  {h:'שבוע 5 — אחרון חביב',b:`<p>אווירת "כבר סיימנו" — קצינים לפני הכל. ועדת סגל מורחב, שיחות סיכום אישיות, הפקת לקחים, ונאום סיום.</p>`}
+ ]}
+];
+
+/* ===== STATE ===== */
+let ME=null,CADETS=[],EXAMS=[],CUR=null,CURGRADES=[],CUREXAM=null,anTypeV='message',CUR_RATING={score:0,notes:''};
+let LOCAL={checks:{},qbank:{}};
+function loadLocal(){try{LOCAL=JSON.parse(localStorage.getItem('pinkus_mef_'+ME.id))||{checks:{},qbank:{}};}catch(e){LOCAL={checks:{},qbank:{}};}}
+function saveLocal(){localStorage.setItem('pinkus_mef_'+ME.id,JSON.stringify(LOCAL));}
+
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function openM(id){$(id).classList.add('on');document.body.style.overflow='hidden';}
+function closeM(id){$(id).classList.remove('on');document.body.style.overflow='';}
+let tT;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),1800);}
+async function api(url,opts){const r=await fetch(url,opts);if(r.status===401){location.href='/pinkus';throw 0;}return r;}
+async function logout(){await fetch('/api/pinkus/logout',{method:'POST'});location.href='/pinkus';}
+
+function go(t){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$('v-'+t).classList.add('active');
+  document.querySelectorAll('nav.tab button').forEach(b=>b.classList.toggle('on',b.dataset.go===t));
+  window.scrollTo(0,0);
+  if(t==='home')renderHome();if(t==='cadets')renderCadets();if(t==='weeks')renderWeeks();
+  if(t==='book')renderBook($('book-search').value);if(t==='tools')renderQbank();
+  if(t==='ogden')loadOgden();if(t==='exams')loadExams();if(t==='announce')loadAnnounce();
+}
+
+/* ===== HOME ===== */
+function cadetPct(rec){if(!rec||!rec.certs)return 0;let d=0;CERT_IDS.forEach(ci=>{if(certDone(ci.type,(rec.certs||{})[ci.id]))d++;});return Math.round(d/CERT_IDS.length*100);}
+function tasksPct(){let t=0,d=0;WEEKS.forEach(w=>w.items.forEach((_,i)=>{t++;if((LOCAL.checks[w.key]||{})['i'+i])d++;}));return t?Math.round(d/t*100):0;}
+
+async function renderHome(){
+  await loadCadets();
+  const recs={};for(const c of CADETS){recs[c.id]=await getRecord(c.id);}
+  let sum=0;CADETS.forEach(c=>sum+=cadetPct(recs[c.id]));
+  const team=CADETS.length?Math.round(sum/CADETS.length):0;
+  $('s-cadets').textContent=CADETS.length;
+  $('s-cert').textContent=team+'%';
+  $('s-tasks').textContent=tasksPct()+'%';
+  $('home-pct').textContent=team+'%';
+  $('home-ring').style.setProperty('--p',team);
+  $('home-bar').style.width=team+'%';
+  $('curve').innerHTML=CURVE.map(x=>`<div class="li"><div style="flex:0 0 32px;height:32px;border-radius:10px;background:${x.c};color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px">${x.w}</div><div class="txt"><b>${x.t}</b><div class="muted" style="font-size:12.5px">${x.d}</div></div></div>`).join('');
+  $('home-cadets').innerHTML=CADETS.map(c=>{const p=cadetPct(recs[c.id]);return `<div class="card" style="margin-bottom:8px"><div class="spread"><div class="row"><div class="avatar">${esc((c.full_name||'?')[0])}</div><div><b>${esc(c.full_name)}</b><div class="muted">${esc(c.city||'')}${c.phone?' · '+esc(c.phone):''}</div></div></div><div class="ring" style="--p:${p}"><b>${p}%</b></div></div></div>`;}).join('')||'<div class="card muted">אין צוערים משויכים</div>';
+}
+
+/* ===== CADETS ===== */
+async function loadCadets(){const r=await api('/api/pinkus/mefakatz/cadets');CADETS=await r.json();}
+async function getRecord(id){try{const r=await api('/api/pinkus/mefakatz/cadets/'+id+'/record');const d=await r.json();return d.data||{};}catch(e){return {};}}
+async function renderCadets(){
+  await loadCadets();
+  $('cad-list').innerHTML=CADETS.map(c=>`<div class="cadet-row" onclick="openCadet(${c.id})">
+    <div class="avatar">${esc((c.full_name||'?')[0])}</div>
+    <div style="flex:1"><b>${esc(c.full_name)}</b><div class="muted">${esc(c.city||'')}${c.phone?' · '+esc(c.phone):''}</div></div>
+    <span class="muted">›</span></div>`).join('')||'<div class="muted" style="padding:14px">אין צוערים</div>';
+}
+
+/* ===== CADET RECORD ===== */
+function segG(cid,f,opts,cur){
+  return `<div class="seg" data-cid="${cid}" data-f="${f}" data-val="${cur||''}">${opts.map(o=>`<button data-v="${o[0]}" class="${cur===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>`;
+}
+function liveP(){
+  const tmp={certs:{}};
+  document.querySelectorAll('#mc-body .seg[data-cid]').forEach(s=>{tmp.certs[s.dataset.cid]=tmp.certs[s.dataset.cid]||{};tmp.certs[s.dataset.cid][s.dataset.f]=s.dataset.val;});
+  document.querySelectorAll('#mc-body [data-f="score"]').forEach(i=>{tmp.certs[i.dataset.cid]=tmp.certs[i.dataset.cid]||{};tmp.certs[i.dataset.cid].score=i.value;});
+  const p=cadetPct(tmp);$('mc-pct').textContent=p+'%';$('mc-bar').style.width=p+'%';
+}
+
+async function openCadet(id){
+  const c=CADETS.find(x=>x.id===id);
+  const rec=await getRecord(id);
+  let rating={score:0,notes:''};
+  try{const rr=await api('/api/pinkus/mefakatz/cadets/'+id+'/rating');if(rr.ok)rating=await rr.json();}catch(e){}
+  CUR={id,rec};CUR_RATING=rating;
+  buildCadet(c,rec,rating);openM('m-cadet');
+}
+
+function buildCadet(c,rec,rating){
+  const pct=cadetPct(rec);
+  let certHtml='';
+  CERTS.forEach((grp,gi)=>{
+    certHtml+=`<div class="grp-h">${grp.g}</div>`;
+    grp.items.forEach((it,ii)=>{
+      const cid='c'+gi+'_'+ii;const v=(rec.certs||{})[cid]||{};
+      certHtml+=`<div class="cert-item"><div class="lab">${it}</div>`;
+      if(grp.type==='task'){certHtml+=`<div class="row" style="flex-wrap:nowrap;gap:8px">${segG(cid,'submitted',[['yes','הגיש'],['no','לא הגיש']],v.submitted)}<input class="score-in" type="number" min="0" max="100" placeholder="ציון" data-cid="${cid}" data-f="score" value="${v.score==null?'':v.score}" oninput="liveP()"></div>`;}
+      else if(grp.type==='exam'){certHtml+=`<input class="score-in" type="number" min="0" max="100" placeholder="ציון" data-cid="${cid}" data-f="score" value="${v.score==null?'':v.score}" oninput="liveP()">`;}
+      else if(grp.type==='pf'){certHtml+=segG(cid,'result',[['pass','עובר'],['fail','לא עובר']],v.result);}
+      else if(grp.type==='att'){certHtml+=segG(cid,'result',[['present','נוכח'],['absent','לא נוכח']],v.result);}
+      certHtml+=`</div>`;
+    });
+  });
+  const naatim=rec.naatim||[{},{}];
+  const naatHtml=naatim.map((n,i)=>`<div class="subcard">
+    <div class="spread"><b>נע״ת ${i+1}</b>${naatim.length>1?`<button class="rm" onclick="rmNaat(${i})">הסר</button>`:''}</div>
+    <label class="fld">שבוע מס׳</label><input data-naat="${i}" data-nf="week" value="${esc(n.week||'')}" inputmode="numeric">
+    <label class="fld">לשימור</label><textarea data-naat="${i}" data-nf="keep">${esc(n.keep||'')}</textarea>
+    <label class="fld">לשיפור</label><textarea data-naat="${i}" data-nf="improve">${esc(n.improve||'')}</textarea>
+    <label class="fld">הערכה מסכמת</label><textarea data-naat="${i}" data-nf="eval">${esc(n.eval||'')}</textarea>
+    <label class="fld">תגובת הצוער</label><textarea data-naat="${i}" data-nf="resp">${esc(n.resp||'')}</textarea>
+  </div>`).join('');
+  const discipline=rec.discipline||[];
+  const discHtml=discipline.map((d,i)=>`<div class="subcard">
+    <div class="spread"><b>הערה ${i+1}</b><button class="rm" onclick="rmDisc(${i})">הסר</button></div>
+    <label class="fld">תאריך</label><input type="date" data-disc="${i}" data-df="date" value="${esc(d.date||'')}">
+    <label class="fld">תיאור האירוע</label><textarea data-disc="${i}" data-df="desc">${esc(d.desc||'')}</textarea>
+    <label class="fld">תגובת הצוער</label><textarea data-disc="${i}" data-df="resp">${esc(d.resp||'')}</textarea>
+  </div>`).join('');
+  const starsHtml=[1,2,3,4,5,6,7,8,9,10].map(i=>`<span onclick="setRating(${i})" data-v="${i}" class="${i<=(rating.score||0)?'on':''}">${i<=(rating.score||0)?'★':'☆'}</span>`).join('');
+
+  $('mc-body').innerHTML=`
+    <label class="fld">שם הצוער</label><input id="f-name" value="${esc(c.full_name||'')}">
+    <label class="fld">חיל / תפקיד</label><input id="f-mil-role" value="${esc(rec.mil_role||'')}" placeholder="לדוגמה: חימוש, לוגיסטיקה...">
+    <div class="row" style="gap:8px">
+      <div style="flex:1"><label class="fld">מספר אישי</label><input id="f-pid" value="${esc(rec.pid||'')}" inputmode="numeric"></div>
+      <div style="flex:1"><label class="fld">יחידת מילואים</label><input id="f-unit" value="${esc(rec.unit||'')}"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="spread"><b>הסמכות מחייבות</b><span class="st" id="mc-pct">${pct}%</span></div>
+      <div class="bar" style="margin:8px 0 14px"><i id="mc-bar" style="width:${pct}%"></i></div>
+      ${certHtml}
+    </div>
+    <div class="sec-title">ציוני תיק צוער</div>
+    <div class="card">${SCORES.map(s=>`<div class="row" style="margin:8px 0"><label style="flex:1;font-size:13px;font-weight:600">${s[1]}</label><input class="score-in" type="number" min="0" max="100" data-score="${s[0]}" value="${(rec.scores||{})[s[0]]==null?'':( rec.scores||{})[s[0]]}" placeholder="—"></div>`).join('')}</div>
+    <div class="sec-title">נע״תים</div>
+    ${naatHtml}<button class="btn sec block" onclick="addNaat()">+ הוסף נע״ת</button>
+    <div class="sec-title">הערות משמעת</div>
+    ${discHtml||'<div class="muted" style="margin:2px 4px 10px;font-size:13px">אין הערות משמעת.</div>'}
+    <button class="btn sec block" onclick="addDisc()">+ הוסף הערת משמעת</button>
+    <div class="sec-title">הערכה והערות</div>
+    <div class="card">
+      <label class="fld">חוזקות</label><textarea id="f-str">${esc(rec.strengths||'')}</textarea>
+      <label class="fld">נקודות לשיפור</label><textarea id="f-weak">${esc(rec.weaknesses||'')}</textarea>
+      <label class="fld">הערות שוטפות</label><textarea id="f-notes">${esc(rec.notes||'')}</textarea>
+      <label class="fld">הערכה מסכמת</label><textarea id="f-sum">${esc(rec.summary||'')}</textarea>
+    </div>
+    <div class="sec-title">דירוג המפקץ (1–10)</div>
+    <div class="card" style="padding:12px">
+      <div class="stars-row" id="mc-stars" data-val="${rating.score||0}">${starsHtml}</div>
+      <label class="fld">הערת דירוג</label><textarea id="mc-rate-notes" style="min-height:44px">${esc(rating.notes||'')}</textarea>
+    </div>
+    <button class="btn block" style="margin-top:16px" onclick="saveRecord()">שמירה</button>`;
+
+  // wire seg buttons
+  document.querySelectorAll('#mc-body .seg[data-cid]').forEach(seg=>{
+    seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+      seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');seg.dataset.val=b.dataset.v;liveP();});});
+}
+
+function setRating(v){$('mc-stars').dataset.val=v;[...$('mc-stars').querySelectorAll('span')].forEach(s=>s.textContent=Number(s.dataset.v)<=v?'★':'☆');}
+
+function syncRec(){
+  const rec=CUR.rec;
+  rec.mil_role=$('f-mil-role').value;rec.pid=$('f-pid').value;rec.unit=$('f-unit').value;
+  rec.strengths=$('f-str').value;rec.weaknesses=$('f-weak').value;
+  rec.notes=$('f-notes').value;rec.summary=$('f-sum').value;
+  rec.certs={};
+  document.querySelectorAll('#mc-body .seg[data-cid]').forEach(s=>{rec.certs[s.dataset.cid]=rec.certs[s.dataset.cid]||{};rec.certs[s.dataset.cid][s.dataset.f]=s.dataset.val||'';});
+  document.querySelectorAll('#mc-body [data-f="score"]').forEach(i=>{rec.certs[i.dataset.cid]=rec.certs[i.dataset.cid]||{};rec.certs[i.dataset.cid].score=i.value;});
+  rec.scores={};document.querySelectorAll('#mc-body [data-score]').forEach(i=>{if(i.value!=='')rec.scores[i.dataset.score]=i.value;});
+  rec.naatim=[];document.querySelectorAll('#mc-body [data-naat]').forEach(i=>{const n=+i.dataset.naat;rec.naatim[n]=rec.naatim[n]||{};rec.naatim[n][i.dataset.nf]=i.value;});
+  if(!rec.naatim.length)rec.naatim=[{}];
+  rec.discipline=[];document.querySelectorAll('#mc-body [data-disc]').forEach(i=>{const n=+i.dataset.disc;rec.discipline[n]=rec.discipline[n]||{};rec.discipline[n][i.dataset.df]=i.value;});
+}
+function addNaat(){syncRec();CUR.rec.naatim=CUR.rec.naatim||[{}];CUR.rec.naatim.push({});buildCadet(CADETS.find(x=>x.id===CUR.id),CUR.rec,CUR_RATING);}
+function rmNaat(i){syncRec();CUR.rec.naatim.splice(i,1);if(!CUR.rec.naatim.length)CUR.rec.naatim=[{}];buildCadet(CADETS.find(x=>x.id===CUR.id),CUR.rec,CUR_RATING);}
+function addDisc(){syncRec();CUR.rec.discipline=CUR.rec.discipline||[];CUR.rec.discipline.push({});buildCadet(CADETS.find(x=>x.id===CUR.id),CUR.rec,CUR_RATING);}
+function rmDisc(i){syncRec();CUR.rec.discipline.splice(i,1);buildCadet(CADETS.find(x=>x.id===CUR.id),CUR.rec,CUR_RATING);}
+
+async function saveRecord(){
+  syncRec();
+  await api('/api/pinkus/mefakatz/cadets/'+CUR.id+'/record',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:CUR.rec})});
+  const score=Number($('mc-stars').dataset.val||0);
+  await api('/api/pinkus/mefakatz/cadets/'+CUR.id+'/rating',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({score:score||null,notes:$('mc-rate-notes').value})});
+  closeM('m-cadet');toast('נשמר ✓');renderCadets();
+}
+
+/* ===== BULK ===== */
+let bulkCid=null;
+async function openBulk(){
+  await loadCadets();
+  if(!CADETS.length){toast('אין צוערים');return;}
+  const opts=CERT_IDS.map(ci=>`<option value="${ci.id}">${ci.grp} — ${ci.name}</option>`).join('');
+  $('mb-body').innerHTML=`<div class="muted" style="margin-bottom:8px;font-size:13px">בחר הסמכה וסמן מי ביצע.</div>
+    <label class="fld">הסמכה</label><select id="bulk-sel" onchange="bulkList()">${opts}</select>
+    <div id="bulk-list" style="margin-top:10px"></div>`;
+  bulkCid=$('bulk-sel').value;bulkList();openM('m-bulk');
+}
+async function bulkList(){
+  bulkCid=$('bulk-sel').value;
+  const ci=CERT_IDS.find(x=>x.id===bulkCid);
+  if(ci.type==='exam'){$('bulk-list').innerHTML='<div class="muted" style="padding:10px 2px;font-size:13px">במבחנים הציון מוזן ידנית בתיק כל צוער.</div>';return;}
+  const recs={};for(const c of CADETS){recs[c.id]=await getRecord(c.id);}
+  const pos=ci.type==='att'?'נוכח':(ci.type==='task'?'הגיש':'עובר');
+  $('bulk-list').innerHTML=`<div class="card" style="padding:8px 12px">
+    ${CADETS.map(c=>{const v=(recs[c.id].certs||{})[bulkCid]||{};const done=certDone(ci.type,v);
+      return `<div class="li" style="padding:9px 2px"><div class="chk ${done?'on':''}" onclick="this.classList.toggle('on')" data-cad="${c.id}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div><div class="txt">${esc(c.full_name)}</div></div>`;}).join('')}
+  </div>
+  <button class="btn block" onclick="bulkApply()">החל — "${pos}" למסומנים</button>`;
+}
+async function bulkApply(){
+  const ci=CERT_IDS.find(x=>x.id===bulkCid);
+  const f=ci.type==='att'||ci.type==='pf'?'result':'submitted';
+  const posV=ci.type==='att'?'present':(ci.type==='task'?'yes':'pass');
+  const negV=ci.type==='att'?'absent':(ci.type==='task'?'no':'fail');
+  for(const c of CADETS){
+    const ch=document.querySelector(`#bulk-list .chk[data-cad="${c.id}"]`);
+    if(!ch)continue;
+    const rec=await getRecord(c.id);
+    rec.certs=rec.certs||{};rec.certs[bulkCid]=rec.certs[bulkCid]||{};rec.certs[bulkCid][f]=ch.classList.contains('on')?posV:negV;
+    await api('/api/pinkus/mefakatz/cadets/'+c.id+'/record',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:rec})});
+  }
+  closeM('m-bulk');toast('עודכן לכל הצוות ✓');
+}
+
+/* ===== WEEKS ===== */
+function renderWeeks(){
+  $('weeks').innerHTML=WEEKS.map(w=>{
+    const done=w.items.filter((_,i)=>(LOCAL.checks[w.key]||{})['i'+i]).length;
+    const pct=Math.round(done/w.items.length*100);
+    return `<div class="card">
+      <div class="spread" style="margin-bottom:8px">
+        <div><h3 style="margin:0">${w.title}</h3><span class="muted" style="font-size:12px">${w.sub}</span></div>
+        <div class="ring" style="width:48px;height:48px;--p:${pct}"><b style="font-size:12px">${pct}%</b></div>
+      </div>
+      <div>${w.items.map((it,i)=>{const on=(LOCAL.checks[w.key]||{})['i'+i];const key=`li-${w.key}-${i}`;
+        return `<div class="li ${on?'done':''}" id="${key}">
+          <div class="chk ${on?'on':''}" onclick="toggleChk('${w.key}',${i})"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+          <div class="txt" onclick="toggleChk('${w.key}',${i})">${Array.isArray(it)?it[0]:it}</div>
+          ${Array.isArray(it)?`<button class="infobtn" onclick="document.getElementById('${key}').classList.toggle('show')">ⓘ</button><div class="info">${it[1]}</div>`:''}
+        </div>`;}).join('')}
+      </div>
+    </div>`;}).join('');
+}
+function toggleChk(wk,i){LOCAL.checks[wk]=LOCAL.checks[wk]||{};LOCAL.checks[wk]['i'+i]=!LOCAL.checks[wk]['i'+i];saveLocal();renderWeeks();}
+
+/* ===== BOOK ===== */
+function renderBook(q){
+  q=(q||'').trim();let html='';
+  BOOK.forEach(ch=>{
+    const secs=ch.secs.filter(s=>!q||(s.h+s.b).includes(q));if(!secs.length)return;
+    html+=`<div class="sec-title">${ch.ch}</div><div class="card accordion">`+
+      secs.map(s=>`<div class="ac ${q?'open':''}"><div class="ac-h" onclick="this.parentNode.classList.toggle('open')"><span>${s.h}</span><span class="arr">▾</span></div><div class="ac-b">${s.b}</div></div>`).join('')+`</div>`;
+  });
+  $('book').innerHTML=html||'<div class="card muted">לא נמצאו תוצאות.</div>';
+}
+
+/* ===== QBANK ===== */
+function renderQbank(){
+  $('qbank').innerHTML=QTOPICS.map((t,i)=>{const q=LOCAL.qbank['q'+i]||{};const full=q.q&&q.a&&q.a.some(x=>x);
+    return `<div class="card accordion"><div class="ac"><div class="ac-h" onclick="this.parentNode.classList.toggle('open')"><span><span class="qbadge ${full?'full':'empty'}">${full?'✓':i+1}</span> &nbsp;${t}</span><span class="arr">▾</span></div><div class="ac-b">
+      <label class="fld">השאלה</label><textarea data-q="${i}" data-f="q" oninput="saveQ(${i})">${esc(q.q||'')}</textarea>
+      ${[0,1,2,3].map(a=>`<label class="fld">תשובה ${['א','ב','ג','ד'][a]} ${q.correct===a?'· ✓ נכונה':''}</label>
+        <div class="row" style="flex-wrap:nowrap"><input data-q="${i}" data-f="a${a}" value="${esc((q.a||[])[a]||'')}" oninput="saveQ(${i})">
+        <button class="btn ${q.correct===a?'':'gray'} sm" style="flex:0 0 auto" onclick="setCorrect(${i},${a})">נכונה</button></div>`).join('')}
+    </div></div></div>`;}).join('');
+  qbCount();
+}
+function saveQ(i){const q=LOCAL.qbank['q'+i]||{a:[]};q.q=document.querySelector(`[data-q="${i}"][data-f="q"]`).value;q.a=[0,1,2,3].map(a=>document.querySelector(`[data-q="${i}"][data-f="a${a}"]`).value);LOCAL.qbank['q'+i]=q;saveLocal();qbCount();}
+function setCorrect(i,a){const q=LOCAL.qbank['q'+i]||{a:[]};q.correct=a;LOCAL.qbank['q'+i]=q;saveLocal();renderQbank();}
+function qbCount(){const f=QTOPICS.filter((_,i)=>{const q=LOCAL.qbank['q'+i]||{};return q.q&&q.a&&q.a.some(y=>y);}).length;$('qb-count').textContent=f+' / 16';$('qb-bar').style.width=Math.round(f/16*100)+'%';}
+
+/* ===== OGDEN ===== */
+const WEEK_LABELS=['','שבוע 1','שבוע 2','שבוע 3','שבוע 4','שבוע 5'];
+let OGDEN=[];
+async function loadOgden(){
+  const r=await api('/api/pinkus/mefakatz/ogden');OGDEN=await r.json();
+  const byWeek={};
+  OGDEN.forEach(c=>{const w=c.week||1;if(!byWeek[w])byWeek[w]=[];byWeek[w].push(c);});
+  $('ogden-list').innerHTML=Object.entries(byWeek).map(([w,chs])=>`
+    <div class="sec-title">${WEEK_LABELS[w]||'שבוע '+w}</div>
+    ${chs.map(c=>`<div class="card" style="padding:14px 16px;margin-bottom:8px">
+      <div class="spread">
+        <div>
+          <b style="font-size:14.5px">${esc(c.name)}</b>
+          <div class="muted" style="font-size:12px;margin-top:2px">${c.end_page-c.start_page+1} עמודים · עמ׳ ${c.start_page}–${c.end_page}</div>
+        </div>
+        <div class="row" style="gap:10px">
+          <a href="https://docs.google.com/viewer?url=${encodeURIComponent(c.url)}&embedded=true" target="_blank" class="btn sm sec" style="text-decoration:none">📄 צפה</a>
+          <a href="${esc(c.url)}" download class="btn sm sec" style="text-decoration:none" title="הורד">⬇</a>
+          <button class="toggle ${c.visible?'on':''}" onclick="toggleOgden(${c.id},this)"></button>
+        </div>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:6px">${c.visible?'✓ חשוף לצוערים':'מוסתר'}</div>
+    </div>`).join('')}`).join('');
+}
+async function toggleOgden(id,btn){
+  btn.classList.toggle('on');
+  const visible=btn.classList.contains('on');
+  await api('/api/pinkus/mefakatz/ogden/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({visible})});
+  const card=btn.closest('.card');
+  card.querySelector('.muted:last-child').textContent=visible?'✓ חשוף לצוערים':'מוסתר';
+  toast(visible?'חשוף ✓':'הוסתר');
+}
+
+/* ===== EXAMS ===== */
+async function loadExams(){
+  const r=await api('/api/pinkus/mefakatz/exams');EXAMS=await r.json();
+  $('exam-list').innerHTML=EXAMS.map(e=>`<div class="card">
+    <div class="spread"><div><h3>${esc(e.name)}</h3><div class="muted">${esc(e.date||'')}</div></div>
+    <span class="badge ${e.published?'b-pub':'b-draft'}">${e.published?'פורסם':'טיוטה'}</span></div>
+    <button class="btn sm sec" style="margin-top:10px" onclick="openGrades(${e.id})">ציונות</button>
+  </div>`).join('')||'<div class="card muted">אין מבחנים</div>';
+}
+function openExam(){$('ex-name').value='';$('ex-date').value='';openM('m-exam');}
+async function saveExam(){const name=$('ex-name').value.trim();if(!name){toast('חסר שם');return;}
+  await api('/api/pinkus/mefakatz/exams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,date:$('ex-date').value})});
+  closeM('m-exam');loadExams();toast('נוצר ✓');}
+async function openGrades(id){
+  CUREXAM=EXAMS.find(e=>e.id===id);
+  const r=await api('/api/pinkus/mefakatz/exams/'+id+'/grades');CURGRADES=await r.json();
+  $('gr-title').textContent=CUREXAM.name;$('gr-pub').classList.toggle('on',!!CUREXAM.published);
+  $('gr-tbl').innerHTML=`<tr><th>צוער</th><th>ציון</th><th>הערה</th></tr>`+
+    CURGRADES.map((g,i)=>`<tr><td>${esc(g.full_name)}</td><td><input type="number" id="grd-${i}" value="${g.grade!=null?g.grade:''}" style="max-width:80px;padding:7px 8px"></td><td><input id="grn-${i}" value="${esc(g.notes||'')}"></td></tr>`).join('');
+  openM('m-grades');
+}
+async function saveGrades(){
+  const list=CURGRADES.map((g,i)=>({cadet_id:g.cadet_id,grade:$('grd-'+i).value,notes:$('grn-'+i).value}));
+  await api('/api/pinkus/mefakatz/exams/'+CUREXAM.id+'/grades',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(list)});
+  await api('/api/pinkus/mefakatz/exams/'+CUREXAM.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({published:$('gr-pub').classList.contains('on')?1:0})});
+  closeM('m-grades');loadExams();toast('נשמר ✓');
+}
+function exportGrades(){
+  const rows=CURGRADES.map((g,i)=>`${g.full_name},${$('grd-'+i).value},${($('grn-'+i).value||'').replace(/,/g,';')}`).join('\n');
+  const blob=new Blob(['﻿שם,ציון,הערה\n'+rows],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=CUREXAM.name+'.csv';a.click();
+}
+
+/* ===== ANNOUNCE ===== */
+function anType(t){anTypeV=t;document.querySelectorAll('#an-type button').forEach(b=>b.classList.toggle('on',b.dataset.v===t));
+  $('an-opts-wrap').style.display=t==='survey'?'block':'none';$('an-link-wrap').style.display=t==='link'?'block':'none';
+  if(t==='survey'&&!document.querySelectorAll('#an-opts input').length){addOpt();addOpt();}}
+function anScope(){$('an-cad-wrap').style.display=$('an-scope').value==='personal'?'block':'none';}
+function addOpt(){const d=document.createElement('div');d.style.marginBottom='6px';d.innerHTML='<input placeholder="אפשרות">';$('an-opts').appendChild(d);}
+async function loadAnnounce(){
+  await loadCadets();
+  $('an-cad').innerHTML=CADETS.map(c=>`<option value="${c.id}">${esc(c.full_name)}</option>`).join('');
+  loadSent();
+}
+async function loadSent(){
+  const r=await api('/api/pinkus/mefakatz/announcements');const list=await r.json();
+  $('an-sent').innerHTML=list.length?list.map(a=>`<div class="card">
+    <div class="spread"><h3>${esc(a.title)}</h3><span class="muted">${a.type==='survey'?a.response_count+' תגובות':esc(a.type)}</span></div>
+    ${a.content?`<div class="muted">${esc(a.content)}</div>`:''}
+    ${a.type==='survey'?`<button class="btn sm sec" style="margin-top:8px" onclick='showResp(${JSON.stringify(a).replace(/'/g,"&#39;")})'>תוצאות</button>`:''}</div>`).join(''):'<div class="card muted">אין הודעות</div>';
+}
+function showResp(a){
+  const total=a.options.reduce((s,o)=>s+o.votes,0)||1;
+  $('resp-body').innerHTML=`<h3>${esc(a.title)}</h3>`+a.options.map(o=>{const pct=Math.round(o.votes/total*100);return `<div class="card" style="margin-bottom:8px"><div class="spread"><span>${esc(o.option_text)}</span><b>${o.votes}</b></div><div class="bar" style="margin-top:6px"><i style="width:${pct}%"></i></div></div>`;}).join('');
+  openM('m-resp');
+}
+async function sendAnnounce(){
+  const scope=$('an-scope').value;
+  const body={scope,type:anTypeV,title:$('an-title').value.trim(),content:$('an-content').value,link_url:$('an-link').value};
+  if(scope==='personal')body.target_id=$('an-cad').value;
+  if(anTypeV==='survey')body.options=[...document.querySelectorAll('#an-opts input')].map(i=>i.value);
+  if(!body.title){toast('חסרה כותרת');return;}
+  await api('/api/pinkus/mefakatz/announce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  $('an-title').value='';$('an-content').value='';toast('נשלח ✓');loadSent();
+}
+
+/* ===== POPUPS (from commander) ===== */
+let popupQueue=[];
+function closePopup(){closeM('m-popup-mef');const seen=JSON.parse(localStorage.getItem('pinkus_mef_popups')||'[]');seen.push(popupQueue[0]?.id);localStorage.setItem('pinkus_mef_popups',JSON.stringify(seen));popupQueue.shift();if(popupQueue.length)showNextPopup();}
+function showNextPopup(){const p=popupQueue[0];if(!p)return;$('mpop-title').textContent=p.title;$('mpop-body').textContent=p.content||'';const img=$('mpop-img');if(p.image_url){img.src=p.image_url;img.style.display='block';}else img.style.display='none';openM('m-popup-mef');}
+async function checkPopups(){try{const r=await api('/api/pinkus/mefakatz/inbox');const list=await r.json();const seen=JSON.parse(localStorage.getItem('pinkus_mef_popups')||'[]');popupQueue=list.filter(a=>a.is_popup&&!seen.includes(a.id));if(popupQueue.length)showNextPopup();}catch(e){}}
+
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m&&m.id!=='m-popup-mef')closeM(m.id);}));
+(async()=>{
+  try{
+    const r=await fetch('/api/pinkus/me');if(!r.ok){location.href='/pinkus';return;}
+    ME=await r.json();if(ME.role!=='mefakatz'){location.href='/pinkus';return;}
+    $('hd-name').textContent=ME.full_name;
+    try{const tm=await fetch('/api/pinkus/mefakatz/me');if(tm.ok){const d=await tm.json();if(d.team_name)$('hd-team').textContent='| '+d.team_name;}}catch(e){}
+    loadLocal();renderHome();setTimeout(checkPopups,800);
+  }catch(e){location.href='/pinkus';}
+})();
+</script>
+</body>
+</html>

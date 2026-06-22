@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a5f3d">
+<title>פנקס מפק״ץ — צוער</title>
+<style>
+  :root{--green:#0f9d63;--green-d:#0c7a4e;--green-dd:#0a5f3d;--navy:#16223a;--silver:#aab2bd;--bg:#f3f5f8;--card:#ffffff;--ink:#141b27;--muted:#71798a;--line:#eceff3;--pass:#0f9d63;--fail:#e0533d;--accent:#19b67e;--shadow:0 2px 8px rgba(20,40,30,.05),0 8px 24px rgba(20,40,30,.05);--shadow-lg:0 6px 18px rgba(20,40,30,.08),0 20px 48px rgba(20,40,30,.10);--r:18px;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Hebrew",sans-serif;background:linear-gradient(180deg,#f6f8fa,#eef2f6 60%);background-attachment:fixed;color:var(--ink);line-height:1.55;font-size:15px;padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+  h1,h2,h3,h4{margin:0 0 .4em}
+  header{position:sticky;top:0;z-index:50;color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 14px;background:linear-gradient(135deg,var(--green-dd),var(--green) 90%);box-shadow:0 6px 20px rgba(12,90,60,.22);border-radius:0 0 22px 22px}
+  .hd{display:flex;align-items:center;gap:12px;justify-content:space-between}
+  .hd .t b{font-size:18px;font-weight:800;display:block}
+  .hd .t span{font-size:11.5px;opacity:.9}
+  .logout{background:rgba(255,255,255,.2);border:none;color:#fff;padding:9px 14px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer}
+  main{padding:16px 14px 0;max-width:760px;margin:0 auto}
+  .view{display:none;animation:fade .25s}.view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .card h3{font-size:15.5px;font-weight:700}
+  .muted{color:var(--muted);font-size:13px}
+  .sec-title{font-size:12px;font-weight:800;color:var(--green-d);margin:18px 6px 8px;text-transform:uppercase;letter-spacing:.6px}
+  button{font-family:inherit;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:none;background:linear-gradient(135deg,var(--green-d),var(--green));color:#fff;padding:11px 17px;border-radius:14px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(15,157,99,.25)}
+  .btn:active{transform:scale(.97)}
+  .btn.sec{background:#e9f5ef;color:var(--green-d);border:1px solid #cfeadd;box-shadow:none}
+  .btn.block{width:100%;justify-content:center}
+  .btn.sm{padding:8px 13px;font-size:12.5px;border-radius:11px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  input,textarea,select{font-family:inherit;font-size:14px;width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fafbfc;color:var(--ink)}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(15,157,99,.13)}
+  input:disabled{background:#eef1f5;color:var(--muted)}
+  textarea{resize:vertical;min-height:60px}
+  label.fld{display:block;margin:11px 0 5px;font-size:12px;font-weight:700;color:var(--muted)}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+  .b-pend{background:#fdf0e3;color:#c47a1e}.b-done{background:#e7f6ee;color:var(--green-d)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:right;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:12px;color:var(--muted)}
+  .grade{font-weight:800;font-size:16px}
+  .opt{display:flex;align-items:center;gap:10px;padding:10px;border:1.5px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer}
+  .opt.sel{border-color:var(--green);background:#e9f6ef}
+  .opt .bar{flex:1;height:8px;background:#e7ebf0;border-radius:8px;overflow:hidden;margin-inline-start:8px}
+  .opt .bar>i{display:block;height:100%;background:var(--green)}
+  nav.tab{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;gap:2px;padding:8px 8px max(env(safe-area-inset-bottom),8px);background:rgba(255,255,255,.85);backdrop-filter:blur(16px);border-top:1px solid rgba(0,0,0,.05);box-shadow:0 -6px 20px rgba(20,40,30,.06)}
+  nav.tab button{flex:1;background:none;border:none;padding:8px 1px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:9px;font-weight:700;min-height:52px;border-radius:14px}
+  nav.tab button.on{color:var(--green-d);background:#e9f6ef}
+  nav.tab svg{width:22px;height:22px}
+  .modal{position:fixed;inset:0;z-index:100;background:rgba(15,25,20,.5);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center}
+  .modal.on{display:flex;animation:fade .2s}
+  .sheet{background:var(--bg);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg)}
+  .sheet .grip{width:42px;height:5px;background:#d4dae1;border-radius:3px;margin:8px auto}
+  .sheet-h{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
+  .x{background:#fff;border:1px solid var(--line);border-radius:50%;width:34px;height:34px;font-size:20px;color:var(--muted);cursor:pointer}
+  .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:14px;font-weight:700;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:200}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header><div class="hd"><div class="t"><b id="hd-name">צוער</b><span id="hd-mef">—</span></div><button class="logout" onclick="logout()">יציאה</button></div></header>
+<main>
+  <!-- PROFILE -->
+  <section class="view active" id="v-profile">
+    <div class="card">
+      <h3>פרטים אישיים</h3>
+      <label class="fld">שם מלא</label><input id="p-name" disabled>
+      <div class="grid2">
+        <div><label class="fld">גיל</label><input id="p-age" type="number"></div>
+        <div><label class="fld">מצב משפחתי</label><select id="p-marital"><option value="">—</option><option value="single">רווק</option><option value="married">נשוי</option><option value="divorced">גרוש</option><option value="widowed">אלמן</option></select></div>
+      </div>
+      <div class="grid2"><div><label class="fld">עיר</label><input id="p-city"></div><div><label class="fld">מידת חולצה</label><select id="p-shirt"><option value="">—</option><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option></select></div></div>
+      <label class="fld">כתובת</label><input id="p-address">
+      <div class="grid2"><div><label class="fld">טלפון</label><input id="p-phone"></div><div><label class="fld">טלפון בן/בת זוג</label><input id="p-spouse"></div></div>
+      <div class="grid2"><div><label class="fld">טלפון הורים</label><input id="p-parents"></div><div><label class="fld">מספר ילדים</label><input id="p-children" type="number"></div></div>
+      <label class="fld">מקצוע אזרחי</label><input id="p-prof">
+      <label class="fld">הערות</label><textarea id="p-notes"></textarea>
+      <button class="btn block" style="margin-top:16px" onclick="saveProfile()">שמור</button>
+    </div>
+  </section>
+
+  <!-- OGDEN -->
+  <section class="view" id="v-ogden">
+    <div class="card" style="background:linear-gradient(135deg,#e7f6ee,#f1f9f5);border:1px solid #c4e8d6;margin-bottom:12px">
+      <b>אוגדן מצגות קק״צ</b>
+      <div class="muted" style="margin-top:4px;font-size:13px">המצגות שחשף לך המפקץ. לחץ להורדה וצפייה.</div>
+    </div>
+    <div id="ogden-list"></div>
+  </section>
+  <!-- MATERIALS -->
+  <section class="view" id="v-materials"><div id="mat-list"></div></section>
+  <!-- ASSIGNMENTS -->
+  <section class="view" id="v-assign"><div id="asg-list"></div></section>
+  <!-- GRADES -->
+  <section class="view" id="v-grades"><div class="card" style="padding:6px 12px"><table id="grades-tbl"></table></div></section>
+  <!-- ANNOUNCEMENTS -->
+  <section class="view" id="v-announce"><div id="an-list"></div></section>
+</main>
+
+<nav class="tab">
+  <button class="on" data-go="profile" onclick="go('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>פרופיל</button>
+  <button data-go="ogden" onclick="go('ogden')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>אוגדן</button>
+  <button data-go="materials" onclick="go('materials')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/></svg>חומרים</button>
+  <button data-go="assign" onclick="go('assign')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>מטלות</button>
+  <button data-go="grades" onclick="go('grades')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>ציונים</button>
+  <button data-go="announce" onclick="go('announce')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8v18l-18-8z"/></svg>הודעות</button>
+</nav>
+
+<div class="modal" id="m-submit"><div class="sheet"><div class="grip"></div>
+  <div class="sheet-h"><h3 id="sub-title">הגשת מטלה</h3><button class="x" onclick="closeM('m-submit')">×</button></div>
+  <input type="hidden" id="sub-id">
+  <label class="fld">תוכן ההגשה</label><textarea id="sub-text" style="min-height:120px"></textarea>
+  <button class="btn block" style="margin-top:14px" onclick="doSubmit()">הגש</button>
+</div></div>
+
+<!-- POPUP MODAL -->
+<div class="modal" id="m-popup" style="align-items:center"><div class="sheet" style="border-radius:22px;max-width:400px;margin:20px;padding:20px 18px 24px">
+  <div style="text-align:center;margin-bottom:10px;font-size:26px">📣</div>
+  <h3 id="pop-title" style="text-align:center;margin-bottom:10px"></h3>
+  <img id="pop-img" style="display:none;width:100%;border-radius:14px;margin-bottom:12px">
+  <div id="pop-body" style="font-size:14px;color:var(--muted);text-align:center;margin-bottom:16px"></div>
+  <button class="btn block" onclick="closePopup()">הבנתי</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<script>
+let ME=null;
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function openM(id){$(id).classList.add('on');document.body.style.overflow='hidden';}
+function closeM(id){$(id).classList.remove('on');document.body.style.overflow='';}
+let tT;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),1800);}
+async function api(url,opts){const r=await fetch(url,opts);if(r.status===401){location.href='/pinkus';throw 0;}return r;}
+async function logout(){await fetch('/api/pinkus/logout',{method:'POST'});location.href='/pinkus';}
+function go(t){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$('v-'+t).classList.add('active');document.querySelectorAll('nav.tab button').forEach(b=>b.classList.toggle('on',b.dataset.go===t));
+  if(t==='ogden')loadOgden();if(t==='materials')loadMaterials();if(t==='assign')loadAssign();if(t==='grades')loadGrades();if(t==='announce')loadAnnounce();}
+
+/* PROFILE */
+async function loadProfile(){const r=await api('/api/pinkus/tzaer/profile');const d=await r.json();
+  $('p-name').value=d.full_name||'';$('p-age').value=d.age||'';$('p-marital').value=d.marital_status||'';$('p-city').value=d.city||'';$('p-shirt').value=d.shirt_size||'';$('p-address').value=d.address||'';$('p-phone').value=d.phone||'';$('p-spouse').value=d.spouse_phone||'';$('p-parents').value=d.parents_phone||'';$('p-children').value=d.num_children||'';$('p-prof').value=d.civilian_profession||'';$('p-notes').value=d.notes||'';}
+async function saveProfile(){const body={age:$('p-age').value,marital_status:$('p-marital').value,city:$('p-city').value,address:$('p-address').value,phone:$('p-phone').value,spouse_phone:$('p-spouse').value,parents_phone:$('p-parents').value,num_children:$('p-children').value,civilian_profession:$('p-prof').value,shirt_size:$('p-shirt').value,notes:$('p-notes').value};
+  await api('/api/pinkus/tzaer/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});toast('נשמר ✓');}
+
+/* OGDEN */
+const WEEK_LABELS_TZ=['','שבוע 1','שבוע 2','שבוע 3','שבוע 4','שבוע 5'];
+async function loadOgden(){
+  const r=await api('/api/pinkus/tzaer/ogden');const list=await r.json();
+  if(!list.length){$('ogden-list').innerHTML='<div class="card muted">המפקץ טרם חשף מצגות.</div>';return;}
+  const byWeek={};list.forEach(c=>{const w=c.week||1;if(!byWeek[w])byWeek[w]=[];byWeek[w].push(c);});
+  $('ogden-list').innerHTML=Object.entries(byWeek).map(([w,chs])=>`
+    <div class="sec-title">${WEEK_LABELS_TZ[w]||'שבוע '+w}</div>
+    ${chs.map(c=>`<div class="card" style="display:flex;align-items:center;gap:14px;padding:14px 16px">
+        <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,var(--green-dd),var(--green));display:grid;place-items:center;flex:0 0 auto;font-size:22px">📄</div>
+        <div style="flex:1">
+          <b style="font-size:14.5px;color:var(--ink)">${esc(c.name)}</b>
+          <div class="muted" style="font-size:12px;margin-top:2px">${c.end_page-c.start_page+1} עמודים</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <a href="https://docs.google.com/viewer?url=${encodeURIComponent(c.url)}&embedded=true" target="_blank" style="text-decoration:none;background:var(--green);color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700">📄 צפה</a>
+          <a href="${esc(c.url)}" download style="text-decoration:none;background:var(--line);color:var(--ink);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700">⬇ הורד</a>
+        </div>
+      </div>`).join('')}`).join('');
+}
+
+/* MATERIALS */
+async function loadMaterials(){const r=await api('/api/pinkus/tzaer/materials');const list=await r.json();
+  $('mat-list').innerHTML=list.length?list.map(m=>`<div class="card"><div class="spread"><h3>${esc(m.title)}</h3><span class="badge b-done">שלב ${m.stage}</span></div><div style="white-space:pre-wrap;font-size:14px">${esc(m.content)}</div></div>`).join(''):'<div class="card muted">אין חומרים זמינים</div>';}
+
+/* ASSIGNMENTS */
+async function loadAssign(){const r=await api('/api/pinkus/tzaer/assignments');const list=await r.json();
+  $('asg-list').innerHTML=list.length?list.map(m=>`<div class="card"><div class="spread"><h3>${esc(m.title)}</h3><span class="badge ${m.status==='submitted'?'b-done':'b-pend'}">${m.status==='submitted'?'הוגש':'ממתין'}</span></div>
+    <div style="white-space:pre-wrap;font-size:14px">${esc(m.content)}</div>${m.due_date?`<div class="muted">עד: ${esc(m.due_date)}</div>`:''}
+    <button class="btn sm sec" style="margin-top:10px" onclick="openSubmit(${m.id},'${esc(m.title)}','${esc(m.submission_text||'').replace(/'/g,"\\'")}')">${m.status==='submitted'?'עריכת הגשה':'הגש'}</button></div>`).join(''):'<div class="card muted">אין מטלות</div>';}
+function openSubmit(id,title,text){$('sub-id').value=id;$('sub-title').textContent=title;$('sub-text').value=text||'';openM('m-submit');}
+async function doSubmit(){const id=$('sub-id').value;await api('/api/pinkus/tzaer/assignments/'+id+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submission_text:$('sub-text').value})});closeM('m-submit');loadAssign();toast('הוגש ✓');}
+
+/* GRADES */
+async function loadGrades(){const r=await api('/api/pinkus/tzaer/grades');const list=await r.json();
+  $('grades-tbl').innerHTML=`<tr><th>מבחן</th><th>תאריך</th><th>ציון</th></tr>`+(list.length?list.map(e=>`<tr><td><b>${esc(e.name)}</b>${e.notes?`<br><span class="muted">${esc(e.notes)}</span>`:''}</td><td class="muted">${esc(e.date||'')}</td><td class="grade" style="color:${e.grade==null?'var(--muted)':(e.grade>=55?'var(--pass)':'var(--fail)')}">${e.grade==null?'—':e.grade}</td></tr>`).join(''):'<tr><td colspan="3" class="muted">אין ציונים</td></tr>');}
+
+/* ANNOUNCEMENTS */
+async function loadAnnounce(){const r=await api('/api/pinkus/tzaer/announcements');const list=await r.json();
+  $('an-list').innerHTML=list.length?list.map(a=>renderAn(a)).join(''):'<div class="card muted">אין הודעות</div>';}
+function renderAn(a){let body='';
+  if(a.type==='survey'){const total=a.options.reduce((s,o)=>s+o.votes,0)||1;
+    body=a.options.map(o=>{const pct=Math.round(o.votes/total*100);const sel=a.my_response===o.id;
+      return `<div class="opt ${sel?'sel':''}" ${a.my_response?'':`onclick="respond(${a.id},${o.id})"`}><span>${esc(o.option_text)}</span>${a.my_response?`<div class="bar"><i style="width:${pct}%"></i></div><span class="muted">${pct}%</span>`:''}</div>`;}).join('');}
+  else if(a.type==='link'){body=`<a class="btn sm" href="${esc(a.link_url)}" target="_blank">פתח קישור</a>`;}
+  return `<div class="card"><div class="spread"><h3>${esc(a.title)}</h3><span class="muted">${esc((a.created_at||'').slice(0,10))}</span></div>${a.content?`<div style="white-space:pre-wrap;font-size:14px;margin-bottom:8px">${esc(a.content)}</div>`:''}${body}</div>`;}
+async function respond(aid,oid){await api('/api/pinkus/tzaer/announcements/'+aid+'/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({option_id:oid})});loadAnnounce();toast('נרשם ✓');}
+
+/* POPUPS */
+let popupQueue=[];
+function closePopup(){closeM('m-popup');const seen=JSON.parse(localStorage.getItem('pinkus_seen_popups')||'[]');seen.push(popupQueue[0]?.id);localStorage.setItem('pinkus_seen_popups',JSON.stringify(seen));popupQueue.shift();if(popupQueue.length)showNextPopup();}
+function showNextPopup(){const p=popupQueue[0];if(!p)return;$('pop-title').textContent=p.title;$('pop-body').textContent=p.content||'';if(p.image_url){$('pop-img').src=p.image_url;$('pop-img').style.display='block';}else{$('pop-img').style.display='none';}openM('m-popup');}
+async function checkPopups(){
+  try{const r=await api('/api/pinkus/tzaer/announcements');const list=await r.json();
+    const seen=JSON.parse(localStorage.getItem('pinkus_seen_popups')||'[]');
+    popupQueue=list.filter(a=>a.is_popup&&!seen.includes(a.id));
+    if(popupQueue.length)showNextPopup();}catch(e){}}
+
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m&&m.id!=='m-popup')closeM(m.id);}));
+(async()=>{try{const r=await fetch('/api/pinkus/me');if(!r.ok){location.href='/pinkus';return;}ME=await r.json();if(ME.role!=='tzaer'){location.href='/pinkus';return;}$('hd-name').textContent=ME.full_name;loadProfile();setTimeout(checkPopups,800);}catch(e){location.href='/pinkus';}})();
+</script>
+</body>
+</html>
