@@ -599,7 +599,7 @@ function renderWeeks(){
         return `<div class="li ${on?'done':''}" id="${key}">
           <div class="chk ${on?'on':''}" onclick="toggleChk('${w.key}',${i})"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
           <div class="txt" onclick="toggleChk('${w.key}',${i})">${Array.isArray(it)?it[0]:it}</div>
-          ${Array.isArray(it)?`<button class="infobtn" onclick="document.getElementById('${key}').classList.toggle('show')">ⓘ</button><div class="info">${it[1]}</div>`:''}
+          ${Array.isArray(it)?`<button class="infobtn" onclick="document.getElementById('${key}').classList.toggle('show')">ⓘ</button><div class="info">${it[1].replace(/\n/g,'<br>')}</div>`:''}
         </div>`;}).join('')}
       </div>
     </div>`;}).join('');
